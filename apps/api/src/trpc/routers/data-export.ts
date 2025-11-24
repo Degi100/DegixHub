@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { parse, object, string, boolean, optional } from 'valibot';
+import { generateId } from 'lucia';
 import { ImportDataSchema } from '@hub/shared/schemas';
 import { db } from '../../db';
 import { links, credentials, tags, linkTags, credentialTags } from '../../db/schema';
@@ -103,6 +104,7 @@ export const dataExportRouter = router({
               const [newTag] = await db
                 .insert(tags)
                 .values({
+                  id: generateId(15),
                   userId,
                   name: tag.name,
                   color: tag.color,
@@ -134,12 +136,12 @@ export const dataExportRouter = router({
             const [newLink] = await db
               .insert(links)
               .values({
+                id: generateId(15),
                 userId,
-                title: link.title,
+                name: link.title,
                 url: link.url,
                 description: link.description || null,
-                category: link.category || null,
-                favicon: link.favicon || null,
+                category: link.category || '',
               })
               .returning();
 
@@ -180,11 +182,13 @@ export const dataExportRouter = router({
             const [newCred] = await db
               .insert(credentials)
               .values({
+                id: generateId(15),
                 userId,
                 name: cred.name,
-                category: cred.category || null,
+                category: cred.category || '',
                 encryptedData: cred.encryptedData,
                 iv: cred.iv,
+                authTag: cred.authTag,
               })
               .returning();
 
