@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { TRPCProvider } from '@/lib/trpc/react';
-import { ThemeProvider } from '@/lib/theme-context';
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,10 +15,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <TRPCProvider>{children}</TRPCProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

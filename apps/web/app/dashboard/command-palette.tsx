@@ -188,33 +188,18 @@ export function CommandPalette({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-start justify-center pt-[20vh]">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl mx-4 overflow-hidden">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-start justify-center pt-4">
+      <div className="bg-card rounded-lg shadow-2xl w-full max-w-2xl mx-4 overflow-hidden border border-border">
         {/* Search Input */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <svg
-              className="absolute left-3 top-3 h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search credentials and links..."
-              className="w-full pl-10 pr-4 py-3 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none text-lg"
-            />
-          </div>
+        <div className="p-3 border-b border-border">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search credentials and links..."
+            className="w-full px-3 py-2 bg-transparent text-foreground placeholder-muted-foreground focus:outline-none text-sm"
+          />
         </div>
 
         {/* Results */}
@@ -225,24 +210,24 @@ export function CommandPalette({
                 <button
                   key={`${result.type}-${result.item.id}`}
                   onClick={() => handleSelectResult(result)}
-                  className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    index === selectedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                  className={`w-full px-3 py-2 flex items-center gap-2 hover:bg-muted transition-colors ${
+                    index === selectedIndex ? 'bg-muted' : ''
                   }`}
                 >
                   {getResultIcon(result)}
-                  <div className="flex-1 text-left">
-                    <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="font-medium text-foreground text-sm truncate">
                       {result.item.name}
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="px-1.5 py-0.5 bg-muted rounded text-xs">
                         {result.item.category}
                       </span>
                       {result.item.tags.map((tag) => (
                         <span
                           key={tag.id}
-                          className="px-2 py-0.5 rounded text-xs text-white"
-                          style={{ backgroundColor: tag.color }}
+                          className="px-1.5 py-0.5 rounded text-xs"
+                          style={{ backgroundColor: `${tag.color}30`, color: tag.color }}
                         >
                           {tag.name}
                         </span>
@@ -254,15 +239,15 @@ export function CommandPalette({
               ))}
             </div>
           ) : (
-            <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+            <div className="py-8 text-center text-muted-foreground text-sm">
               {query ? 'No results found' : 'Start typing to search...'}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-4">
+        <div className="px-3 py-2 border-t border-border bg-muted/50 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-3">
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
             <span>Esc Close</span>

@@ -33,6 +33,7 @@ export const credentialsRouter = router({
             id: cred.id,
             name: cred.name,
             category: cred.category,
+            isPinned: cred.isPinned,
             createdAt: cred.createdAt,
             tags: [],
           };
@@ -45,6 +46,7 @@ export const credentialsRouter = router({
           id: cred.id,
           name: cred.name,
           category: cred.category,
+          isPinned: cred.isPinned,
           createdAt: cred.createdAt,
           tags: credTagsData,
         };
