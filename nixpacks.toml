@@ -4,17 +4,12 @@ aptPkgs = ["unzip"]
 
 [phases.install]
 cmds = [
-  "curl -fsSL https://bun.sh/install | bash",
-  "export BUN_INSTALL=\"$HOME/.bun\"",
-  "export PATH=\"$BUN_INSTALL/bin:$PATH\"",
-  "pnpm install --frozen-lockfile"
+  "curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm install --frozen-lockfile"
 ]
 
 [phases.build]
 cmds = [
-  "export BUN_INSTALL=\"$HOME/.bun\"",
-  "export PATH=\"$BUN_INSTALL/bin:$PATH\"",
-  "pnpm run build"
+  "export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm run build"
 ]
 
 [start]
