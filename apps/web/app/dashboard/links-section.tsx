@@ -55,6 +55,10 @@ export function LinksSection({
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedLinkIds, setSelectedLinkIds] = useState<string[]>([]);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'category'>('date');
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -136,21 +140,52 @@ export function LinksSection({
     }
   };
 
-  // Filter links by search query and selected tags
-  const filteredLinks = links?.filter((link) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      link.name.toLowerCase().includes(query) ||
-      link.url.toLowerCase().includes(query) ||
-      link.category.toLowerCase().includes(query) ||
-      (link.description && link.description.toLowerCase().includes(query));
+  // Filter and sort links
+  const filteredLinks = links
+    ?.filter((link) => {
+      // Text search
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        link.name.toLowerCase().includes(query) ||
+        link.url.toLowerCase().includes(query) ||
+        link.category.toLowerCase().includes(query) ||
+        (link.description && link.description.toLowerCase().includes(query));
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (selectedFilterTags.length === 0) return true;
+      // Tag filter
+      if (selectedFilterTags.length > 0) {
+        const hasTag = selectedFilterTags.some((tagId) => link.tags?.some((t) => t.id === tagId));
+        if (!hasTag) return false;
+      }
 
-    return selectedFilterTags.some((tagId) => link.tags?.some((t) => t.id === tagId));
-  });
+      // Category filter
+      if (filterCategory && link.category !== filterCategory) {
+        return false;
+      }
+
+      // Pinned filter
+      if (filterPinned === 'pinned' && !link.isPinned) return false;
+      if (filterPinned === 'unpinned' && link.isPinned) return false;
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Always sort pinned first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+
+      // Then by selected sort option
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'category':
+          return a.category.localeCompare(b.category);
+        case 'date':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
 
   const toggleFilterTag = (tagId: string) => {
     setSelectedFilterTags((prev) =>
@@ -183,6 +218,102 @@ export function LinksSection({
           onBulkDelete={handleBulkDelete}
           onBulkAssignTags={handleBulkAssignTags}
         />
+      )}
+
+      {/* Advanced Filters */}
+      {!isAddingLink && links && links.length > 0 && (
+        <div className="mb-4">
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white mb-2"
+          >
+            <svg
+              className={`w-4 h-4 transform transition-transform ${showAdvancedFilters ? 'rotate-90' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Advanced Filters
+          </button>
+
+          {showAdvancedFilters && (
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Category Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="">All Categories</option>
+                    <option value="General">General</option>
+                    <option value="Work">Work</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Development">Development</option>
+                    <option value="Design">Design</option>
+                    <option value="Documentation">Documentation</option>
+                    <option value="Social">Social</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="News">News</option>
+                  </select>
+                </div>
+
+                {/* Pinned Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Pinned Status
+                  </label>
+                  <select
+                    value={filterPinned}
+                    onChange={(e) => setFilterPinned(e.target.value as 'all' | 'pinned' | 'unpinned')}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="all">All</option>
+                    <option value="pinned">Pinned Only</option>
+                    <option value="unpinned">Unpinned Only</option>
+                  </select>
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Sort By
+                  </label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as 'date' | 'name' | 'category')}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  >
+                    <option value="date">Date (Newest First)</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="category">Category</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(filterCategory || filterPinned !== 'all' || selectedFilterTags.length > 0) && (
+                <button
+                  onClick={() => {
+                    setFilterCategory('');
+                    setFilterPinned('all');
+                    setSelectedFilterTags([]);
+                  }}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Tag Filters */}

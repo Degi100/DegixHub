@@ -60,6 +60,10 @@ export function CredentialsSection({
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
   const [passwordOptions, setPasswordOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [filterPinned, setFilterPinned] = useState<'all' | 'pinned' | 'unpinned'>('all');
+  const [sortBy, setSortBy] = useState<'date' | 'name' | 'category'>('date');
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -164,18 +168,49 @@ export function CredentialsSection({
     });
   }
 
-  const filteredCredentials = credentials?.filter((cred) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch =
-      cred.name.toLowerCase().includes(query) ||
-      cred.category.toLowerCase().includes(query);
+  const filteredCredentials = credentials
+    ?.filter((cred) => {
+      // Text search
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        cred.name.toLowerCase().includes(query) ||
+        cred.category.toLowerCase().includes(query);
 
-    if (!matchesSearch) return false;
+      if (!matchesSearch) return false;
 
-    if (selectedFilterTags.length === 0) return true;
+      // Tag filter
+      if (selectedFilterTags.length > 0) {
+        const hasTag = selectedFilterTags.some((tagId) => cred.tags?.some((t) => t.id === tagId));
+        if (!hasTag) return false;
+      }
 
-    return selectedFilterTags.some((tagId) => cred.tags?.some((t) => t.id === tagId));
-  });
+      // Category filter
+      if (filterCategory && cred.category !== filterCategory) {
+        return false;
+      }
+
+      // Pinned filter
+      if (filterPinned === 'pinned' && !cred.isPinned) return false;
+      if (filterPinned === 'unpinned' && cred.isPinned) return false;
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Always sort pinned first
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+
+      // Then by selected sort option
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'category':
+          return a.category.localeCompare(b.category);
+        case 'date':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -233,30 +268,121 @@ export function CredentialsSection({
       )}
 
       {!isAdding && credentials && credentials.length > 0 && (
-        <div className="mb-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search credentials by name or category..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            />
-            <svg
-              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <>
+          <div className="mb-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search credentials by name or category..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
               />
-            </svg>
+              <svg
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
           </div>
-        </div>
+
+          {/* Advanced Filters */}
+          <div className="mb-4">
+            <button
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+            >
+              <svg
+                className={`w-4 h-4 transition-transform ${showAdvancedFilters ? 'rotate-90' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              Advanced Filters
+            </button>
+
+            {showAdvancedFilters && (
+              <div className="mt-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={filterCategory}
+                      onChange={(e) => setFilterCategory(e.target.value)}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="">All Categories</option>
+                      {Array.from(new Set(credentials?.map((c) => c.category) || [])).map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pinned Filter */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Pinned Status
+                    </label>
+                    <select
+                      value={filterPinned}
+                      onChange={(e) => setFilterPinned(e.target.value as 'all' | 'pinned' | 'unpinned')}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="all">All</option>
+                      <option value="pinned">Pinned Only</option>
+                      <option value="unpinned">Unpinned Only</option>
+                    </select>
+                  </div>
+
+                  {/* Sort By */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Sort By
+                    </label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as 'date' | 'name' | 'category')}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    >
+                      <option value="date">Date (Newest First)</option>
+                      <option value="name">Name (A-Z)</option>
+                      <option value="category">Category (A-Z)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(filterCategory || filterPinned !== 'all' || sortBy !== 'date') && (
+                  <button
+                    onClick={() => {
+                      setFilterCategory('');
+                      setFilterPinned('all');
+                      setSortBy('date');
+                    }}
+                    className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium"
+                  >
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {isAdding && (
