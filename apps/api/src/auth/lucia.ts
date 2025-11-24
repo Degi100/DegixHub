@@ -1,25 +1,21 @@
 import { Lucia } from 'lucia';
-import { LibSQLAdapter } from '@lucia-auth/adapter-sqlite';
+import { DrizzleSQLiteAdapter } from '@lucia-auth/adapter-drizzle';
 import { db } from '../db';
+import { sessions, users } from '../db/schema';
 
-// Note: Lucia v3 adapter setup for LibSQL
-// We'll use a simple session table approach
-export const lucia = new Lucia(
-  new LibSQLAdapter(db, {
-    user: 'users',
-    session: 'sessions',
-  }),
-  {
-    sessionCookie: {
-      attributes: {
-        secure: process.env.NODE_ENV === 'production',
-      },
+// Lucia adapter for Drizzle + LibSQL
+const adapter = new DrizzleSQLiteAdapter(db, sessions, users);
+
+export const lucia = new Lucia(adapter, {
+  sessionCookie: {
+    attributes: {
+      secure: process.env.NODE_ENV === 'production',
     },
-    getUserAttributes: (attributes) => ({
-      username: attributes.username,
-    }),
-  }
-);
+  },
+  getUserAttributes: (attributes) => ({
+    username: attributes.username,
+  }),
+});
 
 declare module 'lucia' {
   interface Register {

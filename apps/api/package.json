@@ -17,6 +17,8 @@
     "@hub/shared": "workspace:*",
     "@hono/trpc-server": "^0.3.2",
     "@libsql/client": "^0.14.0",
+    "@lucia-auth/adapter-drizzle": "^1.1.0",
+    "@node-rs/argon2": "^1.8.3",
     "@trpc/server": "^11.0.0-rc.592",
     "drizzle-orm": "^0.36.4",
     "hono": "^4.6.11",
