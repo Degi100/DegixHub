@@ -1,9 +1,9 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
 import { parse, array } from 'valibot';
 import { LinkCreateSchema, LinkUpdateSchema, LinkDeleteSchema } from '@hub/shared/schemas';
 import { db } from '../../db';
-import { links } from '../../db/schema';
+import { links, linkTags, tags } from '../../db/schema';
 import { router, protectedProcedure } from '../index';
 
 export const linksRouter = router({
@@ -14,7 +14,29 @@ export const linksRouter = router({
       orderBy: [desc(links.createdAt)],
     });
 
-    return userLinks;
+    // Get tags for each link
+    const linksWithTags = await Promise.all(
+      userLinks.map(async (link) => {
+        const linkTagRecords = await db
+          .select({ tagId: linkTags.tagId })
+          .from(linkTags)
+          .where(eq(linkTags.linkId, link.id));
+
+        if (linkTagRecords.length === 0) {
+          return { ...link, tags: [] };
+        }
+
+        const tagIds = linkTagRecords.map((lt) => lt.tagId);
+        const linkTagsData = await db
+          .select()
+          .from(tags)
+          .where(inArray(tags.id, tagIds));
+
+        return { ...link, tags: linkTagsData };
+      })
+    );
+
+    return linksWithTags;
   }),
 
   // Get links by category
@@ -44,6 +66,15 @@ export const linksRouter = router({
         description: input.description || null,
       });
 
+      // Assign tags if provided
+      if (input.tagIds && input.tagIds.length > 0) {
+        const tagValues = input.tagIds.map((tagId) => ({
+          linkId,
+          tagId,
+        }));
+        await db.insert(linkTags).values(tagValues);
+      }
+
       return { success: true, id: linkId };
     }),
 
@@ -69,6 +100,21 @@ export const linksRouter = router({
           description: input.description || null,
         })
         .where(eq(links.id, input.id));
+
+      // Update tags: delete existing and insert new ones
+      if (input.tagIds !== undefined) {
+        // Delete existing tag assignments
+        await db.delete(linkTags).where(eq(linkTags.linkId, input.id));
+
+        // Insert new tag assignments
+        if (input.tagIds.length > 0) {
+          const tagValues = input.tagIds.map((tagId) => ({
+            linkId: input.id,
+            tagId,
+          }));
+          await db.insert(linkTags).values(tagValues);
+        }
+      }
 
       return { success: true };
     }),

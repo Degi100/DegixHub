@@ -45,3 +45,33 @@ export const credentials = sqliteTable('credentials', {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+export const tags = sqliteTable('tags', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  color: text('color').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export const linkTags = sqliteTable('link_tags', {
+  linkId: text('link_id')
+    .notNull()
+    .references(() => links.id, { onDelete: 'cascade' }),
+  tagId: text('tag_id')
+    .notNull()
+    .references(() => tags.id, { onDelete: 'cascade' }),
+});
+
+export const credentialTags = sqliteTable('credential_tags', {
+  credentialId: text('credential_id')
+    .notNull()
+    .references(() => credentials.id, { onDelete: 'cascade' }),
+  tagId: text('tag_id')
+    .notNull()
+    .references(() => tags.id, { onDelete: 'cascade' }),
+});

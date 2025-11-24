@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
 import { parse, array } from 'valibot';
 import {
@@ -7,7 +7,7 @@ import {
   CredentialDeleteSchema,
 } from '@hub/shared/schemas';
 import { db } from '../../db';
-import { credentials } from '../../db/schema';
+import { credentials, credentialTags, tags } from '../../db/schema';
 import { encrypt, decrypt } from '../../auth/encryption';
 import { router, protectedProcedure } from '../index';
 
@@ -19,14 +19,38 @@ export const credentialsRouter = router({
       orderBy: [desc(credentials.createdAt)],
     });
 
-    // Return credentials with encrypted data (not decrypted for list view)
-    return userCredentials.map((cred) => ({
-      id: cred.id,
-      name: cred.name,
-      category: cred.category,
-      createdAt: cred.createdAt,
-      // Don't send encrypted data in list view for security
-    }));
+    // Get tags for each credential
+    const credentialsWithTags = await Promise.all(
+      userCredentials.map(async (cred) => {
+        const credTagRecords = await db
+          .select({ tagId: credentialTags.tagId })
+          .from(credentialTags)
+          .where(eq(credentialTags.credentialId, cred.id));
+
+        if (credTagRecords.length === 0) {
+          return {
+            id: cred.id,
+            name: cred.name,
+            category: cred.category,
+            createdAt: cred.createdAt,
+            tags: [],
+          };
+        }
+
+        const tagIds = credTagRecords.map((ct) => ct.tagId);
+        const credTagsData = await db.select().from(tags).where(inArray(tags.id, tagIds));
+
+        return {
+          id: cred.id,
+          name: cred.name,
+          category: cred.category,
+          createdAt: cred.createdAt,
+          tags: credTagsData,
+        };
+      })
+    );
+
+    return credentialsWithTags;
   }),
 
   // Get a single credential by ID (with decrypted data)
@@ -76,6 +100,15 @@ export const credentialsRouter = router({
         authTag: encrypted.authTag,
       });
 
+      // Assign tags if provided
+      if (input.tagIds && input.tagIds.length > 0) {
+        const tagValues = input.tagIds.map((tagId) => ({
+          credentialId,
+          tagId,
+        }));
+        await db.insert(credentialTags).values(tagValues);
+      }
+
       return { success: true, id: credentialId };
     }),
 
@@ -105,6 +138,21 @@ export const credentialsRouter = router({
           authTag: encrypted.authTag,
         })
         .where(eq(credentials.id, input.id));
+
+      // Update tags: delete existing and insert new ones
+      if (input.tagIds !== undefined) {
+        // Delete existing tag assignments
+        await db.delete(credentialTags).where(eq(credentialTags.credentialId, input.id));
+
+        // Insert new tag assignments
+        if (input.tagIds.length > 0) {
+          const tagValues = input.tagIds.map((tagId) => ({
+            credentialId: input.id,
+            tagId,
+          }));
+          await db.insert(credentialTags).values(tagValues);
+        }
+      }
 
       return { success: true };
     }),
