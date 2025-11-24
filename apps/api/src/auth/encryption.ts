@@ -68,3 +68,17 @@ export function decrypt(data: EncryptedData): string {
 export function generateEncryptionKey(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+/**
+ * Generate a recovery key (256-bit random key)
+ * Format: XXXX-XXXX-XXXX-XXXX-XXXX-XXXX (Base64 with dashes)
+ */
+export function generateRecoveryKey(): string {
+  const key = crypto.randomBytes(32); // 256 bits
+  const base64 = key.toString('base64').replace(/[+/=]/g, ''); // Remove special chars
+
+  // Format as groups of 4 characters
+  const formatted = base64.match(/.{1,4}/g)?.join('-') || base64;
+
+  return formatted;
+}

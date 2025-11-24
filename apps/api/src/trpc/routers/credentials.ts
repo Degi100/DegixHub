@@ -10,6 +10,7 @@ import { db } from '../../db';
 import { credentials, credentialTags, tags } from '../../db/schema';
 import { encrypt, decrypt } from '../../auth/encryption';
 import { router, protectedProcedure } from '../index';
+import { logActivity } from '../../lib/activity-logger';
 
 export const credentialsRouter = router({
   // Get all credentials for the current user
@@ -72,6 +73,15 @@ export const credentialsRouter = router({
         authTag: credential.authTag,
       });
 
+      // Log activity - viewed credential
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'viewed',
+        resourceType: 'credential',
+        resourceId: credential.id,
+        resourceName: credential.name,
+      });
+
       return {
         id: credential.id,
         name: credential.name,
@@ -109,6 +119,16 @@ export const credentialsRouter = router({
         await db.insert(credentialTags).values(tagValues);
       }
 
+      // Log activity - created credential
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'created',
+        resourceType: 'credential',
+        resourceId: credentialId,
+        resourceName: input.name,
+        newValue: encrypted.encryptedData, // Store encrypted value
+      });
+
       return { success: true, id: credentialId };
     }),
 
@@ -127,6 +147,17 @@ export const credentialsRouter = router({
 
       // Encrypt the new data
       const encrypted = encrypt(input.data);
+
+      // Log activity - updated credential (save old value for audit)
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'updated',
+        resourceType: 'credential',
+        resourceId: input.id,
+        resourceName: input.name,
+        oldValue: credential.encryptedData, // Old encrypted value
+        newValue: encrypted.encryptedData, // New encrypted value
+      });
 
       await db
         .update(credentials)
@@ -169,6 +200,16 @@ export const credentialsRouter = router({
       if (!credential) {
         throw new Error('Credential not found');
       }
+
+      // Log activity - deleted credential (keep old value for recovery)
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'deleted',
+        resourceType: 'credential',
+        resourceId: input.id,
+        resourceName: credential.name,
+        oldValue: credential.encryptedData, // Keep encrypted value for potential recovery
+      });
 
       await db.delete(credentials).where(eq(credentials.id, input.id));
 

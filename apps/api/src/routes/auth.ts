@@ -7,6 +7,7 @@ import { db } from '../db';
 import { users } from '../db/schema';
 import { hashPassword, verifyPassword } from '../auth/password';
 import { lucia } from '../auth/lucia';
+import { generateRecoveryKey } from '../auth/encryption';
 
 const authRoutes = new Hono();
 
@@ -28,12 +29,16 @@ authRoutes.post('/register', async (c) => {
     // Hash password
     const passwordHash = await hashPassword(input.password);
 
+    // Generate recovery key
+    const recoveryKey = generateRecoveryKey();
+
     // Create user
     const userId = generateId(15);
     await db.insert(users).values({
       id: userId,
       username: input.username,
       passwordHash,
+      recoveryKey,
     });
 
     // Create session
@@ -44,10 +49,15 @@ authRoutes.post('/register', async (c) => {
     c.header('Set-Cookie', sessionCookie.serialize());
 
     return c.json({
-      success: true,
-      user: {
-        id: userId,
-        username: input.username,
+      result: {
+        data: {
+          success: true,
+          user: {
+            id: userId,
+            username: input.username,
+          },
+          recoveryKey, // Return recovery key to display in Emergency Kit
+        },
       },
     });
   } catch (error) {

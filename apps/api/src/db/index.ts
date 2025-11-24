@@ -6,4 +6,7 @@ const client = createClient({
   url: process.env.DATABASE_URL || 'file:local.db',
 });
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, {
+  schema,
+  logger: true, // Enable SQL logging
+});

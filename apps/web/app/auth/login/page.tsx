@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const utils = trpc.useUtils();
+  const loginMutation = trpc.auth.login.useMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,30 +21,28 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ username, password }),
+      const result = await loginMutation.mutateAsync({
+        username,
+        password,
       });
 
-      const data = await response.json();
+      if (result.success) {
+        // Set the cookie via API call
+        await fetch('/api/set-cookie', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cookie: result.sessionCookie }),
+        });
 
-      if (!response.ok) {
-        setError(data.error || 'Login failed');
-        setIsLoading(false);
-        return;
+        // Invalidate session query to refetch with new cookie
+        await utils.auth.getSession.invalidate();
+
+        // Force a full page refresh to ensure session is loaded
+        window.location.href = '/dashboard';
       }
-
-      // Invalidate session query to refetch with new cookie
-      await utils.auth.getSession.invalidate();
-      // Navigate to dashboard
-      router.push('/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('An error occurred during login');
+      setError(err.message || 'Invalid username or password');
       setIsLoading(false);
     }
   };
@@ -111,7 +110,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="mt-4 text-center">
+            <Link
+              href="/auth/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+
+          <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?{' '}
             <Link
               href="/auth/register"

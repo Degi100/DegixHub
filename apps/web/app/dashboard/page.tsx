@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { ThemeToggle } from './theme-toggle';
 import { CredentialsSection } from './credentials-section';
 import { LinksSection } from './links-section';
+import { CommandPalette } from './command-palette';
+import { ActivityLog } from './activity-log';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function DashboardPage() {
   });
 
   const [showExportImport, setShowExportImport] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const createLinkMutation = trpc.links.create.useMutation({
     onSuccess: () => {
@@ -88,6 +91,19 @@ export default function DashboardPage() {
       router.push('/auth/login');
     }
   }, [sessionData, isLoading, router]);
+
+  // Global CMD+K / CTRL+K shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (isLoading) {
     return (
@@ -164,6 +180,15 @@ export default function DashboardPage() {
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Welcome, {sessionData.user.username}
               </span>
+              <button
+                onClick={() => setShowCommandPalette(true)}
+                className="p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                title="Quick Search (⌘K)"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
               <div className="relative">
                 <button
                   onClick={() => setShowExportImport(!showExportImport)}
@@ -264,7 +289,18 @@ export default function DashboardPage() {
             onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
           />
         </div>
+
+        <div className="mt-6">
+          <ActivityLog limit={15} />
+        </div>
       </main>
+
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        links={links || []}
+        credentials={credentials || []}
+      />
     </div>
   );
 }

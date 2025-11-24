@@ -5,6 +5,7 @@ import { LinkCreateSchema, LinkUpdateSchema, LinkDeleteSchema } from '@hub/share
 import { db } from '../../db';
 import { links, linkTags, tags } from '../../db/schema';
 import { router, protectedProcedure } from '../index';
+import { logActivity } from '../../lib/activity-logger';
 
 export const linksRouter = router({
   // Get all links for the current user
@@ -75,6 +76,16 @@ export const linksRouter = router({
         await db.insert(linkTags).values(tagValues);
       }
 
+      // Log activity - created link
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'created',
+        resourceType: 'link',
+        resourceId: linkId,
+        resourceName: input.name,
+        metadata: { url: input.url, category: input.category },
+      });
+
       return { success: true, id: linkId };
     }),
 
@@ -90,6 +101,17 @@ export const linksRouter = router({
       if (!link) {
         throw new Error('Link not found');
       }
+
+      // Log activity - updated link
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'updated',
+        resourceType: 'link',
+        resourceId: input.id,
+        resourceName: input.name,
+        oldValue: JSON.stringify({ name: link.name, url: link.url, category: link.category }),
+        newValue: JSON.stringify({ name: input.name, url: input.url, category: input.category }),
+      });
 
       await db
         .update(links)
@@ -131,6 +153,16 @@ export const linksRouter = router({
       if (!link) {
         throw new Error('Link not found');
       }
+
+      // Log activity - deleted link
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'deleted',
+        resourceType: 'link',
+        resourceId: input.id,
+        resourceName: link.name,
+        oldValue: JSON.stringify({ name: link.name, url: link.url, category: link.category }),
+      });
 
       await db.delete(links).where(eq(links.id, input.id));
 

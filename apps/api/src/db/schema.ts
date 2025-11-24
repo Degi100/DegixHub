@@ -4,6 +4,7 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  recoveryKey: text('recovery_key').notNull(), // Base64-encoded 256-bit recovery key
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
@@ -74,4 +75,21 @@ export const credentialTags = sqliteTable('credential_tags', {
   tagId: text('tag_id')
     .notNull()
     .references(() => tags.id, { onDelete: 'cascade' }),
+});
+
+export const activityLogs = sqliteTable('activity_logs', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  action: text('action').notNull(), // 'created', 'updated', 'deleted', 'viewed', 'copied'
+  resourceType: text('resource_type').notNull(), // 'credential', 'link', 'tag'
+  resourceId: text('resource_id'), // ID of the resource (null if deleted)
+  resourceName: text('resource_name').notNull(), // Name for display
+  oldValue: text('old_value'), // Encrypted old value (for updates)
+  newValue: text('new_value'), // Encrypted new value (for updates)
+  metadata: text('metadata'), // JSON string for additional data
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });

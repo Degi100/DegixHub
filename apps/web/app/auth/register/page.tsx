@@ -47,8 +47,9 @@ export default function RegisterPage() {
 
       // Invalidate session query to refetch with new cookie
       await utils.auth.getSession.invalidate();
-      // Navigate to dashboard
-      router.push('/dashboard');
+
+      // Navigate to Emergency Kit page with recovery key
+      router.push(`/auth/emergency-kit?key=${encodeURIComponent(data.result.data.recoveryKey)}`);
     } catch (err) {
       console.error('Registration error:', err);
       setError('An error occurred during registration');
