@@ -1,6 +1,6 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse } from 'valibot';
+import { parse, array } from 'valibot';
 import { LinkCreateSchema, LinkUpdateSchema, LinkDeleteSchema } from '@hub/shared/schemas';
 import { db } from '../../db';
 import { links } from '../../db/schema';
@@ -89,5 +89,23 @@ export const linksRouter = router({
       await db.delete(links).where(eq(links.id, input.id));
 
       return { success: true };
+    }),
+
+  // Bulk import links
+  import: protectedProcedure
+    .input((raw) => parse(array(LinkCreateSchema), raw))
+    .mutation(async ({ ctx, input }) => {
+      const linkValues = input.map((link) => ({
+        id: generateId(15),
+        userId: ctx.user.id,
+        name: link.name,
+        url: link.url,
+        category: link.category,
+        description: link.description || null,
+      }));
+
+      await db.insert(links).values(linkValues);
+
+      return { success: true, count: linkValues.length };
     }),
 });

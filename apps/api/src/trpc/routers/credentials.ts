@@ -1,6 +1,6 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse } from 'valibot';
+import { parse, array } from 'valibot';
 import {
   CredentialCreateSchema,
   CredentialUpdateSchema,
@@ -125,5 +125,27 @@ export const credentialsRouter = router({
       await db.delete(credentials).where(eq(credentials.id, input.id));
 
       return { success: true };
+    }),
+
+  // Bulk import credentials
+  import: protectedProcedure
+    .input((raw) => parse(array(CredentialCreateSchema), raw))
+    .mutation(async ({ ctx, input }) => {
+      const credentialValues = input.map((cred) => {
+        const encrypted = encrypt(cred.data);
+        return {
+          id: generateId(15),
+          userId: ctx.user.id,
+          name: cred.name,
+          category: cred.category,
+          encryptedData: encrypted.encryptedData,
+          iv: encrypted.iv,
+          authTag: encrypted.authTag,
+        };
+      });
+
+      await db.insert(credentials).values(credentialValues);
+
+      return { success: true, count: credentialValues.length };
     }),
 });

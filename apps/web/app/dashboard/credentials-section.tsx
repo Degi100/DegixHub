@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc/react';
+import { generatePassword, DEFAULT_PASSWORD_OPTIONS, type PasswordOptions } from '@/lib/password-generator';
 
 export function CredentialsSection() {
   const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
@@ -13,6 +14,9 @@ export function CredentialsSection() {
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [credentialSearchQuery, setCredentialSearchQuery] = useState('');
+  const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
+  const [passwordOptions, setPasswordOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS);
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -73,6 +77,16 @@ export function CredentialsSection() {
     navigator.clipboard.writeText(text);
   };
 
+  const handleGeneratePassword = () => {
+    try {
+      const password = generatePassword(passwordOptions);
+      setFormData({ ...formData, data: password });
+      setShowPasswordGenerator(false);
+    } catch (error) {
+      alert('Please select at least one character type');
+    }
+  };
+
   // Update form when viewing credential for edit
   if (editingId && viewedCredential && formData.data === '') {
     setFormData({
@@ -81,6 +95,14 @@ export function CredentialsSection() {
       data: viewedCredential.data,
     });
   }
+
+  const filteredCredentials = credentials?.filter((cred: any) => {
+    const query = credentialSearchQuery.toLowerCase();
+    return (
+      cred.name.toLowerCase().includes(query) ||
+      cred.category.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -95,6 +117,33 @@ export function CredentialsSection() {
           </button>
         )}
       </div>
+
+      {!isAdding && credentials && credentials.length > 0 && (
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search credentials by name or category..."
+              value={credentialSearchQuery}
+              onChange={(e) => setCredentialSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            />
+            <svg
+              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      )}
 
       {isAdding && (
         <form onSubmit={handleSubmit} className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -126,9 +175,84 @@ export function CredentialsSection() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Credential Data (will be encrypted)
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Credential Data (will be encrypted)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordGenerator(!showPasswordGenerator)}
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                >
+                  {showPasswordGenerator ? 'Hide' : 'Generate Password'}
+                </button>
+              </div>
+
+              {showPasswordGenerator && (
+                <div className="mb-3 p-3 bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600">
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Length: {passwordOptions.length}
+                      </label>
+                      <input
+                        type="range"
+                        min="8"
+                        max="64"
+                        value={passwordOptions.length}
+                        onChange={(e) => setPasswordOptions({ ...passwordOptions, length: Number(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center text-xs text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={passwordOptions.includeUppercase}
+                          onChange={(e) => setPasswordOptions({ ...passwordOptions, includeUppercase: e.target.checked })}
+                          className="mr-2"
+                        />
+                        Uppercase (A-Z)
+                      </label>
+                      <label className="flex items-center text-xs text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={passwordOptions.includeLowercase}
+                          onChange={(e) => setPasswordOptions({ ...passwordOptions, includeLowercase: e.target.checked })}
+                          className="mr-2"
+                        />
+                        Lowercase (a-z)
+                      </label>
+                      <label className="flex items-center text-xs text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={passwordOptions.includeNumbers}
+                          onChange={(e) => setPasswordOptions({ ...passwordOptions, includeNumbers: e.target.checked })}
+                          className="mr-2"
+                        />
+                        Numbers (0-9)
+                      </label>
+                      <label className="flex items-center text-xs text-gray-700 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={passwordOptions.includeSymbols}
+                          onChange={(e) => setPasswordOptions({ ...passwordOptions, includeSymbols: e.target.checked })}
+                          className="mr-2"
+                        />
+                        Symbols (!@#$...)
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="w-full px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded"
+                    >
+                      Generate & Use
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <textarea
                 value={formData.data}
                 onChange={(e) => setFormData({ ...formData, data: e.target.value })}
@@ -162,8 +286,8 @@ export function CredentialsSection() {
       )}
 
       <div className="space-y-3">
-        {credentials && credentials.length > 0 ? (
-          credentials.map((cred: any) => (
+        {filteredCredentials && filteredCredentials.length > 0 ? (
+          filteredCredentials.map((cred: any) => (
             <div
               key={cred.id}
               className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
@@ -204,6 +328,10 @@ export function CredentialsSection() {
               </div>
             </div>
           ))
+        ) : credentialSearchQuery && credentials && credentials.length > 0 ? (
+          <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+            No credentials found matching "{credentialSearchQuery}"
+          </p>
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">
             No credentials yet. Click "Add Credential" to create your first one!
