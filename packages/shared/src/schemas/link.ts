@@ -1,10 +1,20 @@
-import { minLength, object, optional, string, url } from 'valibot';
+import { minLength, object, optional, pipe, string, url } from 'valibot';
 
-export const LinkSchema = object({
-  name: string([minLength(1, 'Name is required')]),
-  url: string([url('Must be a valid URL')]),
-  category: string([minLength(1, 'Category is required')]),
+export const LinkCreateSchema = object({
+  name: pipe(string(), minLength(1, 'Name is required')),
+  url: pipe(string(), url('Must be a valid URL')),
+  category: pipe(string(), minLength(1, 'Category is required')),
   description: optional(string()),
 });
 
-export type Link = typeof LinkSchema._output;
+export const LinkUpdateSchema = object({
+  id: pipe(string(), minLength(1, 'ID is required')),
+  name: pipe(string(), minLength(1, 'Name is required')),
+  url: pipe(string(), url('Must be a valid URL')),
+  category: pipe(string(), minLength(1, 'Category is required')),
+  description: optional(string()),
+});
+
+export const LinkDeleteSchema = object({
+  id: pipe(string(), minLength(1, 'ID is required')),
+});

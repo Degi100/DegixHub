@@ -1,11 +1,18 @@
-import { minLength, object, optional, string } from 'valibot';
+import { minLength, object, pipe, string } from 'valibot';
 
-export const CredentialSchema = object({
-  name: string([minLength(1, 'Name is required')]),
-  category: string([minLength(1, 'Category is required')]),
-  username: optional(string()),
-  password: optional(string()),
-  notes: optional(string()),
+export const CredentialCreateSchema = object({
+  name: pipe(string(), minLength(1, 'Name is required')),
+  category: pipe(string(), minLength(1, 'Category is required')),
+  data: pipe(string(), minLength(1, 'Credential data is required')),
 });
 
-export type Credential = typeof CredentialSchema._output;
+export const CredentialUpdateSchema = object({
+  id: pipe(string(), minLength(1, 'ID is required')),
+  name: pipe(string(), minLength(1, 'Name is required')),
+  category: pipe(string(), minLength(1, 'Category is required')),
+  data: pipe(string(), minLength(1, 'Credential data is required')),
+});
+
+export const CredentialDeleteSchema = object({
+  id: pipe(string(), minLength(1, 'ID is required')),
+});
