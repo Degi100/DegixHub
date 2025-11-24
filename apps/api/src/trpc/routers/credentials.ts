@@ -17,7 +17,7 @@ export const credentialsRouter = router({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userCredentials = await db.query.credentials.findMany({
       where: eq(credentials.userId, ctx.user.id),
-      orderBy: [desc(credentials.createdAt)],
+      orderBy: [desc(credentials.isPinned), desc(credentials.createdAt)],
     });
 
     // Get tags for each credential
@@ -337,5 +337,37 @@ export const credentialsRouter = router({
       });
 
       return { success: true, count: tagValues.length };
+    }),
+
+  // Toggle pin status
+  togglePin: protectedProcedure
+    .input((raw) => parse(object({ id: string() }), raw))
+    .mutation(async ({ ctx, input }) => {
+      // Get current credential
+      const credential = await db.query.credentials.findFirst({
+        where: and(eq(credentials.id, input.id), eq(credentials.userId, ctx.user.id)),
+      });
+
+      if (!credential) {
+        throw new Error('Credential not found');
+      }
+
+      // Toggle pin status
+      const newPinStatus = !credential.isPinned;
+      await db
+        .update(credentials)
+        .set({ isPinned: newPinStatus })
+        .where(eq(credentials.id, input.id));
+
+      // Log activity
+      await logActivity({
+        userId: ctx.user.id,
+        action: newPinStatus ? 'pinned' : 'unpinned',
+        resourceType: 'credential',
+        resourceId: input.id,
+        resourceName: credential.name,
+      });
+
+      return { success: true, isPinned: newPinStatus };
     }),
 });

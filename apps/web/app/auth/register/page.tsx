@@ -45,6 +45,13 @@ export default function RegisterPage() {
         return;
       }
 
+      // Set the cookie via API call
+      await fetch('/api/set-cookie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookie: data.result.data.sessionCookie }),
+      });
+
       // Invalidate session query to refetch with new cookie
       await utils.auth.getSession.invalidate();
 

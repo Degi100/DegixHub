@@ -12,7 +12,7 @@ export const linksRouter = router({
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const userLinks = await db.query.links.findMany({
       where: eq(links.userId, ctx.user.id),
-      orderBy: [desc(links.createdAt)],
+      orderBy: [desc(links.isPinned), desc(links.createdAt)],
     });
 
     // Get tags for each link
@@ -280,5 +280,37 @@ export const linksRouter = router({
       });
 
       return { success: true, count: tagValues.length };
+    }),
+
+  // Toggle pin status
+  togglePin: protectedProcedure
+    .input((raw) => parse(object({ id: string() }), raw))
+    .mutation(async ({ ctx, input }) => {
+      // Get current link
+      const link = await db.query.links.findFirst({
+        where: and(eq(links.id, input.id), eq(links.userId, ctx.user.id)),
+      });
+
+      if (!link) {
+        throw new Error('Link not found');
+      }
+
+      // Toggle pin status
+      const newPinStatus = !link.isPinned;
+      await db
+        .update(links)
+        .set({ isPinned: newPinStatus })
+        .where(eq(links.id, input.id));
+
+      // Log activity
+      await logActivity({
+        userId: ctx.user.id,
+        action: newPinStatus ? 'pinned' : 'unpinned',
+        resourceType: 'link',
+        resourceId: input.id,
+        resourceName: link.name,
+      });
+
+      return { success: true, isPinned: newPinStatus };
     }),
 });

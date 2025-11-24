@@ -93,6 +93,18 @@ export default function DashboardPage() {
     },
   });
 
+  const toggleLinkPinMutation = trpc.links.togglePin.useMutation({
+    onSuccess: () => {
+      refetchLinks();
+    },
+  });
+
+  const toggleCredentialPinMutation = trpc.credentials.togglePin.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+    },
+  });
+
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: (data) => {
       document.cookie = data.sessionCookie;
@@ -225,6 +237,7 @@ export default function DashboardPage() {
           onCreateLink={(data) => createLinkMutation.mutate(data)}
           onUpdateLink={(data) => updateLinkMutation.mutate(data)}
           onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
+          onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
           onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
           onBulkDelete={(ids) => bulkDeleteLinksMutation.mutate({ ids })}
           onBulkAssignTags={(linkIds, tagIds) => bulkAssignLinksTagsMutation.mutate({ linkIds, tagIds })}
@@ -237,6 +250,7 @@ export default function DashboardPage() {
             onCreateCredential={(data) => createCredentialMutation.mutate(data)}
             onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
             onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
+            onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
             onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
             onBulkDelete={(ids) => bulkDeleteCredentialsMutation.mutate({ ids })}
             onBulkAssignTags={(credentialIds, tagIds) => bulkAssignCredentialsTagsMutation.mutate({ credentialIds, tagIds })}

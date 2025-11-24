@@ -27,6 +27,7 @@ export const links = sqliteTable('links', {
   url: text('url').notNull(),
   category: text('category').notNull(),
   description: text('description'),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
@@ -42,6 +43,7 @@ export const credentials = sqliteTable('credentials', {
   encryptedData: text('encrypted_data').notNull(),
   iv: text('iv').notNull(),
   authTag: text('auth_tag').notNull(),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
