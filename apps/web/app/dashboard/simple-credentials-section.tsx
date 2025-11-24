@@ -22,6 +22,119 @@ interface SimpleCredentialsSectionProps {
   onCreateCredential: (data: { name: string; data: string; category: string }) => void;
 }
 
+// Category color mapping (same as links)
+const categoryColors: Record<string, string> = {
+  General: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+  Work: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+  Personal: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+  Development: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
+  Design: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
+  Banking: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+  Social: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
+  Entertainment: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+  Shopping: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+  Email: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+};
+
+// Category accent colors for card borders (with !important to override global border-color)
+const categoryAccents: Record<string, string> = {
+  General: 'hover:!border-gray-500/50',
+  Work: 'hover:!border-blue-500/50',
+  Personal: 'hover:!border-purple-500/50',
+  Development: 'hover:!border-green-500/50',
+  Design: 'hover:!border-pink-500/50',
+  Banking: 'hover:!border-emerald-500/50',
+  Social: 'hover:!border-cyan-500/50',
+  Entertainment: 'hover:!border-orange-500/50',
+  Shopping: 'hover:!border-red-500/50',
+  Email: 'hover:!border-indigo-500/50',
+};
+
+// Credential Card Component
+function CredentialCard({
+  credential,
+  onTogglePin,
+  onView,
+  onDelete,
+}: {
+  credential: Credential;
+  onTogglePin: (id: string) => void;
+  onView: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const categoryColor = categoryColors[credential.category] || categoryColors.General;
+  const categoryAccent = categoryAccents[credential.category] || categoryAccents.General;
+
+  return (
+    <div className={cn(
+      'group relative bg-card border-2 border-border rounded-lg p-4 hover:shadow-xl transition-all duration-200',
+      categoryAccent
+    )}>
+      {/* Category Badge & Pin */}
+      <div className="flex items-center justify-between mb-3">
+        <span className={cn('px-2.5 py-1 rounded-md text-xs font-semibold border', categoryColor)}>
+          {credential.category}
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+            <Shield className="h-3 w-3" />
+            <span className="hidden sm:inline">AES-256</span>
+          </div>
+          {credential.isPinned && (
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mb-4 min-h-[60px]">
+        <h4 className="font-bold text-base mb-2 line-clamp-1 group-hover:text-primary transition-colors">{credential.name}</h4>
+        <p className="text-sm text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded inline-block">••••••••</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => onTogglePin(credential.id)}
+          title={credential.isPinned ? 'Unpin' : 'Pin'}
+        >
+          <Star
+            className={cn(
+              'h-4 w-4',
+              credential.isPinned ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
+            )}
+          />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => onView(credential.id)}
+          title="View credential"
+        >
+          <Eye className={cn('h-4 w-4')} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive hover:bg-destructive/10"
+          onClick={() => {
+            if (confirm('Delete this credential?')) {
+              onDelete(credential.id);
+            }
+          }}
+          title="Delete"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SimpleCredentialsSection({
   credentials,
   onDeleteCredential,
@@ -47,11 +160,13 @@ export function SimpleCredentialsSection({
     toast.success('Copied to clipboard');
   };
 
-  const sortedCredentials = credentials?.sort((a, b) => {
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
+  const pinnedCredentials = credentials?.filter(c => c.isPinned).sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const unpinnedCredentials = credentials?.filter(c => !c.isPinned).sort((a, b) =>
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,84 +234,65 @@ export function SimpleCredentialsSection({
         </div>
       )}
 
-      <div className="border rounded-lg">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="text-left p-3 font-medium text-sm">Name</th>
-              <th className="text-left p-3 font-medium text-sm">Category</th>
-              <th className="text-left p-3 font-medium text-sm">Security</th>
-              <th className="text-right p-3 font-medium text-sm">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedCredentials && sortedCredentials.length > 0 ? (
-              sortedCredentials.map((cred) => (
-                <tr key={cred.id} className="border-b last:border-0 hover:bg-muted/50">
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      {cred.isPinned && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
-                      <span className="font-medium">{cred.name}</span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <span className="text-sm text-muted-foreground">{cred.category}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                      <Shield className="h-3 w-3" />
-                      AES-256
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => onTogglePin(cred.id)}
-                      >
-                        <Star
-                          className={cn(
-                            'h-4 w-4',
-                            cred.isPinned ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-                          )}
-                        />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setViewingId(viewingId === cred.id ? null : cred.id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          if (confirm('Delete this credential?')) {
-                            onDeleteCredential(cred.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="p-8 text-center text-muted-foreground">
-                  No credentials yet. Click "Add Credential" to create one.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Pinned Credentials */}
+      {pinnedCredentials && pinnedCredentials.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            Pinned ({pinnedCredentials.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pinnedCredentials.map((cred) => (
+              <CredentialCard
+                key={cred.id}
+                credential={cred}
+                onTogglePin={onTogglePin}
+                onView={(id) => setViewingId(viewingId === id ? null : id)}
+                onDelete={onDeleteCredential}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Regular Credentials */}
+      {unpinnedCredentials && unpinnedCredentials.length > 0 && (
+        <div className="space-y-3">
+          {pinnedCredentials && pinnedCredentials.length > 0 && (
+            <h3 className="text-sm font-semibold text-muted-foreground">
+              All Credentials ({unpinnedCredentials.length})
+            </h3>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {unpinnedCredentials.map((cred) => (
+              <CredentialCard
+                key={cred.id}
+                credential={cred}
+                onTogglePin={onTogglePin}
+                onView={(id) => setViewingId(viewingId === id ? null : id)}
+                onDelete={onDeleteCredential}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {(!credentials || credentials.length === 0) && (
+        <div className="border-2 border-dashed rounded-lg p-12 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Shield className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-1">No credentials yet</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Securely store your passwords and secrets
+          </p>
+          <Button onClick={() => setShowDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Credential
+          </Button>
+        </div>
+      )}
 
       {/* View Credential Modal */}
       {viewingId && viewedCredential && (
