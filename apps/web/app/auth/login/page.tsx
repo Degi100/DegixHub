@@ -10,22 +10,42 @@ export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data) => {
-      // Set cookie (already done by server via Set-Cookie header)
-      document.cookie = data.sessionCookie;
-      router.push('/dashboard');
-    },
-    onError: (error) => {
-      setError(error.message);
-    },
-  });
+  const utils = trpc.useUtils();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    loginMutation.mutate({ username, password });
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed');
+        setIsLoading(false);
+        return;
+      }
+
+      // Invalidate session query to refetch with new cookie
+      await utils.auth.getSession.invalidate();
+      // Navigate to dashboard
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('An error occurred during login');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -84,10 +104,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
             >
-              {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 

@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { trpcServer } from '@hono/trpc-server';
 import { appRouter } from './trpc/router';
+import { createContext } from './trpc/index';
+import authRoutes from './routes/auth';
 
 const app = new Hono();
 
@@ -23,11 +25,15 @@ app.get('/', (c) => {
   });
 });
 
+// Auth routes (Hono native for cookie handling)
+app.route('/auth', authRoutes);
+
 // tRPC endpoint
 app.use(
   '/trpc/*',
   trpcServer({
     router: appRouter,
+    createContext,
   })
 );
 

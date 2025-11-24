@@ -86,8 +86,10 @@ export const authRouter = router({
     }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
-    // We'll implement session handling in context later
-    // For now, return a blank session cookie
+    if (ctx.session) {
+      await lucia.invalidateSession(ctx.session.id);
+    }
+
     const sessionCookie = lucia.createBlankSessionCookie();
 
     return {
@@ -97,11 +99,9 @@ export const authRouter = router({
   }),
 
   getSession: publicProcedure.query(async ({ ctx }) => {
-    // We'll get session from context later
-    // For now, return null
     return {
-      user: null,
-      session: null,
+      user: ctx.user,
+      session: ctx.session,
     };
   }),
 });

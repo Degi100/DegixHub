@@ -11,17 +11,9 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: (data) => {
-      // Set cookie (already done by server via Set-Cookie header)
-      document.cookie = data.sessionCookie;
-      router.push('/dashboard');
-    },
-    onError: (error) => {
-      setError(error.message);
-    },
-  });
+  const utils = trpc.useUtils();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +25,35 @@ export default function RegisterPage() {
       return;
     }
 
-    registerMutation.mutate({ username, password });
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:3001/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Registration failed');
+        setIsLoading(false);
+        return;
+      }
+
+      // Invalidate session query to refetch with new cookie
+      await utils.auth.getSession.invalidate();
+      // Navigate to dashboard
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('An error occurred during registration');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -113,10 +133,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={registerMutation.isPending}
+              disabled={isLoading}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
             >
-              {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
+              {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
