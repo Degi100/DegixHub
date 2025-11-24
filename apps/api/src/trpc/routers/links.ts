@@ -1,6 +1,6 @@
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse, array } from 'valibot';
+import { parse, array, object, pipe, string, minLength } from 'valibot';
 import { LinkCreateSchema, LinkUpdateSchema, LinkDeleteSchema } from '@hub/shared/schemas';
 import { db } from '../../db';
 import { links, linkTags, tags } from '../../db/schema';
@@ -41,7 +41,7 @@ export const linksRouter = router({
 
   // Get links by category
   getByCategory: protectedProcedure
-    .input((raw) => parse({ category: raw as string }))
+    .input((raw) => parse(object({ category: pipe(string(), minLength(1)) }), raw))
     .query(async ({ ctx, input }) => {
       const userLinks = await db.query.links.findMany({
         where: and(eq(links.userId, ctx.user.id), eq(links.category, input.category)),

@@ -1,6 +1,6 @@
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse, array } from 'valibot';
+import { parse, array, object, pipe, string, minLength } from 'valibot';
 import {
   CredentialCreateSchema,
   CredentialUpdateSchema,
@@ -55,7 +55,7 @@ export const credentialsRouter = router({
 
   // Get a single credential by ID (with decrypted data)
   getById: protectedProcedure
-    .input((raw) => parse({ id: raw as string }))
+    .input((raw) => parse(object({ id: pipe(string(), minLength(1)) }), raw))
     .query(async ({ ctx, input }) => {
       const credential = await db.query.credentials.findFirst({
         where: and(eq(credentials.id, input.id), eq(credentials.userId, ctx.user.id)),
