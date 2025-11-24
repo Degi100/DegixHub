@@ -4,13 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, ExternalLink, Trash2, Plus, X, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { TagInput } from './tag-input';
-
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
 
 interface Link {
   id: string;
@@ -20,23 +13,19 @@ interface Link {
   description?: string | null;
   isPinned?: boolean | null;
   createdAt: string;
-  tags: Tag[];
 }
 
 interface SimpleLinksSectionProps {
   links: Link[] | undefined;
-  tags: Tag[];
   onDeleteLink: (id: string) => void;
   onTogglePin: (id: string) => void;
-  onCreateLink: (data: { name: string; url: string; category: string; description?: string; tagIds?: string[] }) => void;
-  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string; tagIds?: string[] }) => void;
-  onCreateTag: (name: string, color: string) => void;
+  onCreateLink: (data: { name: string; url: string; category: string; description?: string }) => void;
+  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string }) => void;
 }
 
-export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, onCreateTag }: SimpleLinksSectionProps) {
+export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink }: SimpleLinksSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingLink, setEditingLink] = useState<string | null>(null);
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -52,16 +41,14 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const tagIds = selectedTags.map((t) => t.id);
 
     if (editingLink) {
-      onUpdateLink({ id: editingLink, ...formData, tagIds });
+      onUpdateLink({ id: editingLink, ...formData });
     } else {
-      onCreateLink({ ...formData, tagIds });
+      onCreateLink({ ...formData });
     }
 
     setFormData({ name: '', url: '', category: 'General', description: '' });
-    setSelectedTags([]);
     setShowDialog(false);
     setEditingLink(null);
   };
@@ -74,7 +61,6 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
       category: link.category,
       description: link.description || '',
     });
-    setSelectedTags(link.tags || []);
     setShowDialog(true);
   };
 
@@ -82,7 +68,6 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
     setShowDialog(false);
     setEditingLink(null);
     setFormData({ name: '', url: '', category: 'General', description: '' });
-    setSelectedTags([]);
   };
 
   return (
@@ -154,15 +139,6 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
                   className="w-full px-3 py-2 bg-muted/50 rounded-md border border-border focus:outline-none focus:border-primary resize-none"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Tags</label>
-                <TagInput
-                  selectedTags={selectedTags}
-                  availableTags={tags}
-                  onTagsChange={setSelectedTags}
-                  onCreateTag={onCreateTag}
-                />
-              </div>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" className="flex-1">{editingLink ? 'Update' : 'Add'} Link</Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
@@ -178,7 +154,6 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-medium text-sm">Name</th>
               <th className="text-left p-3 font-medium text-sm">Category</th>
-              <th className="text-left p-3 font-medium text-sm">Tags</th>
               <th className="text-right p-3 font-medium text-sm">Actions</th>
             </tr>
           </thead>
@@ -201,22 +176,6 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
                   </td>
                   <td className="p-3">
                     <span className="text-sm text-muted-foreground">{link.category}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex gap-1">
-                      {link.tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-block px-2 py-0.5 text-xs rounded"
-                          style={{
-                            backgroundColor: `${tag.color}20`,
-                            color: tag.color,
-                          }}
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center justify-end gap-1">
@@ -267,7 +226,7 @@ export function SimpleLinksSection({ links, tags, onDeleteLink, onTogglePin, onC
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-muted-foreground">
+                <td colSpan={3} className="p-8 text-center text-muted-foreground">
                   No links yet. Click "Add Link" to create one.
                 </td>
               </tr>

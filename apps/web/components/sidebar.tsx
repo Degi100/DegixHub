@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   Link as LinkIcon,
   Key,
-  Tag,
   Activity,
   LogOut,
   Moon,
@@ -16,7 +15,7 @@ import {
 import { useTheme } from 'next-themes';
 
 interface SidebarProps {
-  onNavigate: (section: 'links' | 'credentials' | 'tags' | 'activity' | 'data-management') => void;
+  onNavigate: (section: 'links' | 'credentials' | 'activity' | 'data-management') => void;
   activeSection: string;
   onLogout: () => void;
   stats: {
@@ -34,7 +33,6 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
   const navItems = [
     { id: 'links', label: 'Links', icon: LinkIcon, count: stats.linksCount },
     { id: 'credentials', label: 'Credentials', icon: Key, count: stats.credentialsCount },
-    { id: 'tags', label: 'Tags', icon: Tag, count: stats.tagsCount },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'data-management', label: 'Data', icon: Database },
   ];

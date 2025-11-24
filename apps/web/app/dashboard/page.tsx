@@ -21,7 +21,6 @@ export default function DashboardPage() {
   // Fetch data
   const { data: links, refetch: refetchLinks } = trpc.links.getAll.useQuery();
   const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
-  const { data: tags, refetch: refetchTags } = trpc.tags.getAll.useQuery();
 
   // Link Mutations
   const createLinkMutation = trpc.links.create.useMutation({
@@ -74,14 +73,6 @@ export default function DashboardPage() {
     },
   });
 
-  // Tag Mutations
-  const createTagMutation = trpc.tags.create.useMutation({
-    onSuccess: () => {
-      refetchTags();
-      toast.success('Tag created');
-    },
-  });
-
   // Auth Mutation
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: (data) => {
@@ -126,7 +117,7 @@ export default function DashboardPage() {
   const stats = {
     linksCount: links?.length || 0,
     credentialsCount: credentials?.length || 0,
-    tagsCount: tags?.length || 0,
+    tagsCount: 0,
     pinnedCount: (links?.filter((l) => l.isPinned).length || 0) + (credentials?.filter((c) => c.isPinned).length || 0),
   };
 
@@ -164,16 +155,13 @@ export default function DashboardPage() {
                   return (
                     link.name.toLowerCase().includes(query) ||
                     link.url.toLowerCase().includes(query) ||
-                    link.category.toLowerCase().includes(query) ||
-                    link.tags.some((tag) => tag.name.toLowerCase().includes(query))
+                    link.category.toLowerCase().includes(query)
                   );
                 })}
-                tags={tags || []}
                 onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
                 onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
                 onCreateLink={(data) => createLinkMutation.mutate(data)}
                 onUpdateLink={(data) => updateLinkMutation.mutate(data)}
-                onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
               />
             )}
 
@@ -184,8 +172,7 @@ export default function DashboardPage() {
                   const query = searchQuery.toLowerCase();
                   return (
                     cred.name.toLowerCase().includes(query) ||
-                    cred.category.toLowerCase().includes(query) ||
-                    cred.tags.some((tag) => tag.name.toLowerCase().includes(query))
+                    cred.category.toLowerCase().includes(query)
                   );
                 })}
                 onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}

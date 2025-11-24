@@ -6,19 +6,12 @@ import { Star, Eye, Copy, Trash2, Plus, Shield, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-interface Tag {
-  id: string;
-  name: string;
-  color: string;
-}
-
 interface Credential {
   id: string;
   name: string;
   category: string;
   isPinned?: boolean | null;
   createdAt: string;
-  tags: Tag[];
 }
 
 interface SimpleCredentialsSectionProps {
@@ -119,7 +112,6 @@ export function SimpleCredentialsSection({
             <tr className="border-b bg-muted/50">
               <th className="text-left p-3 font-medium text-sm">Name</th>
               <th className="text-left p-3 font-medium text-sm">Category</th>
-              <th className="text-left p-3 font-medium text-sm">Tags</th>
               <th className="text-left p-3 font-medium text-sm">Security</th>
               <th className="text-right p-3 font-medium text-sm">Actions</th>
             </tr>
@@ -136,22 +128,6 @@ export function SimpleCredentialsSection({
                   </td>
                   <td className="p-3">
                     <span className="text-sm text-muted-foreground">{cred.category}</span>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex gap-1">
-                      {cred.tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-block px-2 py-0.5 text-xs rounded"
-                          style={{
-                            backgroundColor: `${tag.color}20`,
-                            color: tag.color,
-                          }}
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
@@ -208,7 +184,7 @@ export function SimpleCredentialsSection({
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                <td colSpan={4} className="p-8 text-center text-muted-foreground">
                   No credentials yet. Click "Add Credential" to create one.
                 </td>
               </tr>

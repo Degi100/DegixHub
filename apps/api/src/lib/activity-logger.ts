@@ -2,15 +2,24 @@ import { generateId } from 'lucia';
 import { db } from '../db';
 import { activityLogs } from '../db/schema';
 
-type ActivityAction = 'created' | 'updated' | 'deleted' | 'viewed' | 'copied';
+type ActivityAction =
+  | 'created'
+  | 'updated'
+  | 'deleted'
+  | 'viewed'
+  | 'copied'
+  | 'pinned'
+  | 'unpinned'
+  | 'bulk_deleted'
+  | 'bulk_tag_assigned';
 type ResourceType = 'credential' | 'link' | 'tag';
 
 interface LogActivityParams {
   userId: string;
   action: ActivityAction;
   resourceType: ResourceType;
-  resourceId?: string;
-  resourceName: string;
+  resourceId?: string | null;
+  resourceName?: string;
   oldValue?: string;
   newValue?: string;
   metadata?: Record<string, any>;
@@ -23,7 +32,7 @@ export async function logActivity(params: LogActivityParams) {
     action: params.action,
     resourceType: params.resourceType,
     resourceId: params.resourceId || null,
-    resourceName: params.resourceName,
+    resourceName: params.resourceName || '',
     oldValue: params.oldValue || null,
     newValue: params.newValue || null,
     metadata: params.metadata ? JSON.stringify(params.metadata) : null,
