@@ -11,8 +11,10 @@ type ActivityAction =
   | 'pinned'
   | 'unpinned'
   | 'bulk_deleted'
-  | 'bulk_tag_assigned';
-type ResourceType = 'credential' | 'link' | 'tag';
+  | 'bulk_tag_assigned'
+  | 'data_exported'
+  | 'data_imported';
+type ResourceType = 'credential' | 'link' | 'tag' | 'export' | 'import';
 
 interface LogActivityParams {
   userId: string;
