@@ -3,9 +3,41 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc/react';
 import { generatePassword, DEFAULT_PASSWORD_OPTIONS, type PasswordOptions } from '@/lib/password-generator';
+import { TagInput } from './tag-input';
 
-export function CredentialsSection() {
-  const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  createdAt?: string;
+  userId?: string;
+}
+
+interface Credential {
+  id: string;
+  name: string;
+  category: string;
+  createdAt: string;
+  tags: Tag[];
+}
+
+interface CredentialsSectionProps {
+  credentials: Credential[] | undefined;
+  tags: Tag[];
+  onCreateCredential: (data: any) => void;
+  onUpdateCredential: (data: any) => void;
+  onDeleteCredential: (id: string) => void;
+  onCreateTag: (name: string, color: string) => void;
+}
+
+export function CredentialsSection({
+  credentials,
+  tags,
+  onCreateCredential,
+  onUpdateCredential,
+  onDeleteCredential,
+  onCreateTag,
+}: CredentialsSectionProps) {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const { data: viewedCredential } = trpc.credentials.getById.useQuery(
     { id: viewingId! },
@@ -14,7 +46,9 @@ export function CredentialsSection() {
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [credentialSearchQuery, setCredentialSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
   const [passwordOptions, setPasswordOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS);
   const [formData, setFormData] = useState({
@@ -23,47 +57,33 @@ export function CredentialsSection() {
     data: '',
   });
 
-  const createMutation = trpc.credentials.create.useMutation({
-    onSuccess: () => {
-      refetchCredentials();
-      setIsAdding(false);
-      setFormData({ name: '', category: '', data: '' });
-    },
-  });
-
-  const updateMutation = trpc.credentials.update.useMutation({
-    onSuccess: () => {
-      refetchCredentials();
-      setEditingId(null);
-      setIsAdding(false);
-      setFormData({ name: '', category: '', data: '' });
-    },
-  });
-
-  const deleteMutation = trpc.credentials.delete.useMutation({
-    onSuccess: () => {
-      refetchCredentials();
-    },
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const tagIds = selectedTags.map((t) => t.id);
+
     if (editingId) {
-      updateMutation.mutate({ id: editingId, ...formData });
+      onUpdateCredential({ id: editingId, ...formData, tagIds });
     } else {
-      createMutation.mutate(formData);
+      onCreateCredential({ ...formData, tagIds });
     }
+
+    // Reset form
+    setIsAdding(false);
+    setEditingId(null);
+    setFormData({ name: '', category: '', data: '' });
+    setSelectedTags([]);
   };
 
-  const handleEdit = (cred: any) => {
+  const handleEdit = (cred: Credential) => {
     setEditingId(cred.id);
     setViewingId(cred.id);
+    setSelectedTags(cred.tags || []);
     setIsAdding(true);
   };
 
   const handleDelete = (id: string) => {
     if (confirm('Are you sure you want to delete this credential?')) {
-      deleteMutation.mutate({ id });
+      onDeleteCredential(id);
     }
   };
 
@@ -71,6 +91,13 @@ export function CredentialsSection() {
     setIsAdding(false);
     setEditingId(null);
     setFormData({ name: '', category: '', data: '' });
+    setSelectedTags([]);
+  };
+
+  const toggleFilterTag = (tagId: string) => {
+    setSelectedFilterTags((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
   };
 
   const copyToClipboard = (text: string) => {
@@ -96,12 +123,17 @@ export function CredentialsSection() {
     });
   }
 
-  const filteredCredentials = credentials?.filter((cred: any) => {
-    const query = credentialSearchQuery.toLowerCase();
-    return (
+  const filteredCredentials = credentials?.filter((cred) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
       cred.name.toLowerCase().includes(query) ||
-      cred.category.toLowerCase().includes(query)
-    );
+      cred.category.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+
+    if (selectedFilterTags.length === 0) return true;
+
+    return selectedFilterTags.some((tagId) => cred.tags?.some((t) => t.id === tagId));
   });
 
   return (
@@ -118,14 +150,42 @@ export function CredentialsSection() {
         )}
       </div>
 
+      {/* Tag Filters */}
+      {tags.length > 0 && !isAdding && (
+        <div className="mb-4">
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                onClick={() => toggleFilterTag(tag.id)}
+                className={`px-3 py-1 rounded-full text-sm text-white transition-opacity ${
+                  selectedFilterTags.includes(tag.id) ? 'opacity-100 ring-2 ring-white' : 'opacity-60'
+                }`}
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.name}
+              </button>
+            ))}
+            {selectedFilterTags.length > 0 && (
+              <button
+                onClick={() => setSelectedFilterTags([])}
+                className="px-3 py-1 rounded-full text-sm bg-gray-600 text-white hover:bg-gray-700"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {!isAdding && credentials && credentials.length > 0 && (
         <div className="mb-4">
           <div className="relative">
             <input
               type="text"
               placeholder="Search credentials by name or category..."
-              value={credentialSearchQuery}
-              onChange={(e) => setCredentialSearchQuery(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             />
             <svg
@@ -265,11 +325,21 @@ export function CredentialsSection() {
                 This data will be encrypted with AES-256-GCM before storage
               </p>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tags
+              </label>
+              <TagInput
+                selectedTags={selectedTags}
+                availableTags={tags}
+                onTagsChange={setSelectedTags}
+                onCreateTag={onCreateTag}
+              />
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg"
               >
                 {editingId ? 'Update' : 'Create'}
               </button>
@@ -295,13 +365,26 @@ export function CredentialsSection() {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">{cred.name}</h3>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
                       {cred.category}
                     </span>
                     <span className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded">
                       Encrypted
                     </span>
+                    {cred.tags && cred.tags.length > 0 && (
+                      <>
+                        {cred.tags.map((tag: Tag) => (
+                          <span
+                            key={tag.id}
+                            className="inline-block px-2 py-1 text-xs font-medium text-white rounded"
+                            style={{ backgroundColor: tag.color }}
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">
@@ -319,7 +402,6 @@ export function CredentialsSection() {
                   </button>
                   <button
                     onClick={() => handleDelete(cred.id)}
-                    disabled={deleteMutation.isPending}
                     className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
                   >
                     Delete
@@ -328,9 +410,9 @@ export function CredentialsSection() {
               </div>
             </div>
           ))
-        ) : credentialSearchQuery && credentials && credentials.length > 0 ? (
+        ) : searchQuery || selectedFilterTags.length > 0 ? (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-            No credentials found matching "{credentialSearchQuery}"
+            No credentials match your search or filters
           </p>
         ) : (
           <p className="text-center text-gray-500 dark:text-gray-400 py-8">

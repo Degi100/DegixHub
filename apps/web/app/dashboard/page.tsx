@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const { data: links, refetch: refetchLinks } = trpc.links.getAll.useQuery(undefined, {
     enabled: !!sessionData?.user,
   });
-  const { data: credentials } = trpc.credentials.getAll.useQuery(undefined, {
+  const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery(undefined, {
     enabled: !!sessionData?.user,
   });
   const { data: tags, refetch: refetchTags } = trpc.tags.getAll.useQuery(undefined, {
@@ -44,6 +44,24 @@ export default function DashboardPage() {
   const createTagMutation = trpc.tags.create.useMutation({
     onSuccess: () => {
       refetchTags();
+    },
+  });
+
+  const createCredentialMutation = trpc.credentials.create.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+    },
+  });
+
+  const updateCredentialMutation = trpc.credentials.update.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+    },
+  });
+
+  const deleteCredentialMutation = trpc.credentials.delete.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
     },
   });
 
@@ -237,7 +255,14 @@ export default function DashboardPage() {
         />
 
         <div className="mt-6">
-          <CredentialsSection />
+          <CredentialsSection
+            credentials={credentials}
+            tags={tags || []}
+            onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+            onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
+            onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
+            onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
+          />
         </div>
       </main>
     </div>
