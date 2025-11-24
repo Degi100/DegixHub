@@ -1,0 +1,127 @@
+/* ==========================================
+   Dashboard Page Layout
+   ========================================== */
+
+.dashboard {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-background);
+}
+
+/* Main Content Area */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+/* Search Header */
+.searchHeader {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4);
+  padding-left: 78.8px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Burger Menu Button (Mobile only) */
+.burgerButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.burgerButton:hover {
+  background-color: var(--color-muted);
+  border-color: var(--color-primary);
+}
+
+.burgerButton svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .burgerButton {
+    display: none;
+  }
+}
+
+.searchInput {
+  flex: 1;
+  max-width: 42rem;
+  padding: var(--space-2) var(--space-4);
+  height: 2.5rem;
+  background-color: rgba(var(--category-general), 0.05);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+  transition: all var(--transition-base);
+}
+
+@media (min-width: 768px) {
+  .searchInput {
+    margin: 0 auto;
+  }
+}
+
+.searchInput::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background-color: var(--color-background);
+}
+
+/* Content Container (Mobile First) */
+.content {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .content {
+    padding: var(--space-6);
+    gap: var(--space-6);
+  }
+}
+
+/* Loading Spinner */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--color-muted);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 1s linear infinite;
+}

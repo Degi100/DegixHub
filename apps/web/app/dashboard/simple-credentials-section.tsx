@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, Eye, Copy, Trash2, Plus, Shield, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
+import styles from './card.module.css';
+import dialogStyles from './dialog.module.css';
 
 interface Credential {
   id: string;
@@ -22,34 +23,6 @@ interface SimpleCredentialsSectionProps {
   onCreateCredential: (data: { name: string; data: string; category: string }) => void;
 }
 
-// Category color mapping (same as links)
-const categoryColors: Record<string, string> = {
-  General: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
-  Work: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-  Personal: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-  Development: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20',
-  Design: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20',
-  Banking: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-  Social: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-  Entertainment: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-  Shopping: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-  Email: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-};
-
-// Category accent colors for card borders (with !important to override global border-color)
-const categoryAccents: Record<string, string> = {
-  General: 'hover:!border-gray-500/50',
-  Work: 'hover:!border-blue-500/50',
-  Personal: 'hover:!border-purple-500/50',
-  Development: 'hover:!border-green-500/50',
-  Design: 'hover:!border-pink-500/50',
-  Banking: 'hover:!border-emerald-500/50',
-  Social: 'hover:!border-cyan-500/50',
-  Entertainment: 'hover:!border-orange-500/50',
-  Shopping: 'hover:!border-red-500/50',
-  Email: 'hover:!border-indigo-500/50',
-};
-
 // Credential Card Component
 function CredentialCard({
   credential,
@@ -62,65 +35,58 @@ function CredentialCard({
   onView: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
-  const categoryColor = categoryColors[credential.category] || categoryColors.General;
-  const categoryAccent = categoryAccents[credential.category] || categoryAccents.General;
+  const categoryClass = credential.category.toLowerCase();
 
   return (
-    <div className={cn(
-      'group relative bg-card border-2 border-border rounded-lg p-4 hover:shadow-xl transition-all duration-200',
-      categoryAccent
-    )}>
+    <div className={`${styles.card} ${styles[`card--${categoryClass}`]}`}>
       {/* Category Badge & Pin */}
-      <div className="flex items-center justify-between mb-3">
-        <span className={cn('px-2.5 py-1 rounded-md text-xs font-semibold border', categoryColor)}>
+      <div className={styles.cardHeader}>
+        <span className={`${styles.categoryBadge} ${styles[`categoryBadge--${categoryClass}`]}`}>
           {credential.category}
         </span>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-            <Shield className="h-3 w-3" />
-            <span className="hidden sm:inline">AES-256</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <div className={styles.securityBadge}>
+            <Shield />
+            <span>AES-256</span>
           </div>
           {credential.isPinned && (
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            <Star className={styles.pinIcon} />
           )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="mb-4 min-h-[60px]">
-        <h4 className="font-bold text-base mb-2 line-clamp-1 group-hover:text-primary transition-colors">{credential.name}</h4>
-        <p className="text-sm text-muted-foreground font-mono bg-muted/30 px-2 py-1 rounded inline-block">••••••••</p>
+      <div className={`${styles.cardContent} ${styles.credentialContent}`}>
+        <h4 className={styles.cardTitle}>{credential.name}</h4>
+        <p className={styles.passwordDots}>••••••••</p>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className={styles.cardActions}>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
           onClick={() => onTogglePin(credential.id)}
           title={credential.isPinned ? 'Unpin' : 'Pin'}
         >
-          <Star
-            className={cn(
-              'h-4 w-4',
-              credential.isPinned ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'
-            )}
-          />
+          <Star style={{
+            width: '1rem',
+            height: '1rem',
+            fill: credential.isPinned ? '#facc15' : 'none',
+            color: credential.isPinned ? '#facc15' : 'currentColor'
+          }} />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
           onClick={() => onView(credential.id)}
           title="View credential"
         >
-          <Eye className={cn('h-4 w-4')} />
+          <Eye style={{ width: '1rem', height: '1rem' }} />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-destructive hover:bg-destructive/10"
           onClick={() => {
             if (confirm('Delete this credential?')) {
               onDelete(credential.id);
@@ -128,7 +94,7 @@ function CredentialCard({
           }}
           title="Delete"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 style={{ width: '1rem', height: '1rem', color: 'var(--color-destructive)' }} />
         </Button>
       </div>
     </div>
@@ -176,57 +142,57 @@ export function SimpleCredentialsSection({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Credentials</h2>
+    <div className={dialogStyles.section}>
+      <div className={dialogStyles.sectionHeader}>
+        <h2 className={dialogStyles.sectionTitle}>Credentials</h2>
         <Button size="sm" onClick={() => setShowDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
           Add Credential
         </Button>
       </div>
 
       {/* Add Credential Dialog */}
       {showDialog && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-md border border-border">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 className="text-lg font-semibold">Add New Credential</h3>
-              <button onClick={() => setShowDialog(false)} className="hover:bg-muted rounded p-1">
-                <X className="h-4 w-4" />
+        <div className={dialogStyles.overlay}>
+          <div className={dialogStyles.dialog}>
+            <div className={dialogStyles.dialogHeader}>
+              <h3 className={dialogStyles.dialogTitle}>Add New Credential</h3>
+              <button onClick={() => setShowDialog(false)} className={dialogStyles.closeButton}>
+                <X style={{ width: '1rem', height: '1rem' }} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+            <form onSubmit={handleSubmit} className={dialogStyles.form}>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-muted/50 rounded-md border border-border focus:outline-none focus:border-primary"
+                  className={dialogStyles.input}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Password/Secret *</label>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Password/Secret *</label>
                 <input
                   type="password"
                   required
                   value={formData.data}
                   onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                  className="w-full px-3 py-2 bg-muted/50 rounded-md border border-border focus:outline-none focus:border-primary"
+                  className={dialogStyles.input}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Category</label>
                 <input
                   type="text"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-3 py-2 bg-muted/50 rounded-md border border-border focus:outline-none focus:border-primary"
+                  className={dialogStyles.input}
                 />
               </div>
-              <div className="flex gap-2 pt-2">
-                <Button type="submit" className="flex-1">Add Credential</Button>
+              <div className={dialogStyles.formActions}>
+                <Button type="submit" style={{ flex: 1 }}>Add Credential</Button>
                 <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
               </div>
             </form>
@@ -236,12 +202,12 @@ export function SimpleCredentialsSection({
 
       {/* Pinned Credentials */}
       {pinnedCredentials && pinnedCredentials.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+        <div className={dialogStyles.cardSection}>
+          <h3 className={dialogStyles.subsectionTitle}>
+            <Star className={styles.pinIcon} />
             Pinned ({pinnedCredentials.length})
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={dialogStyles.grid}>
             {pinnedCredentials.map((cred) => (
               <CredentialCard
                 key={cred.id}
@@ -257,13 +223,13 @@ export function SimpleCredentialsSection({
 
       {/* Regular Credentials */}
       {unpinnedCredentials && unpinnedCredentials.length > 0 && (
-        <div className="space-y-3">
+        <div className={dialogStyles.cardSection}>
           {pinnedCredentials && pinnedCredentials.length > 0 && (
-            <h3 className="text-sm font-semibold text-muted-foreground">
+            <h3 className={dialogStyles.subsectionTitle}>
               All Credentials ({unpinnedCredentials.length})
             </h3>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={dialogStyles.grid}>
             {unpinnedCredentials.map((cred) => (
               <CredentialCard
                 key={cred.id}
@@ -279,16 +245,16 @@ export function SimpleCredentialsSection({
 
       {/* Empty State */}
       {(!credentials || credentials.length === 0) && (
-        <div className="border-2 border-dashed rounded-lg p-12 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-            <Shield className="h-6 w-6 text-muted-foreground" />
+        <div className={dialogStyles.emptyState}>
+          <div className={dialogStyles.emptyIcon}>
+            <Shield style={{ width: '1.5rem', height: '1.5rem', color: 'var(--color-muted-foreground)' }} />
           </div>
-          <h3 className="text-lg font-semibold mb-1">No credentials yet</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+          <h3 className={dialogStyles.emptyTitle}>No credentials yet</h3>
+          <p className={dialogStyles.emptyDescription}>
             Securely store your passwords and secrets
           </p>
           <Button onClick={() => setShowDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
             Add Credential
           </Button>
         </div>
@@ -296,41 +262,43 @@ export function SimpleCredentialsSection({
 
       {/* View Credential Modal */}
       {viewingId && viewedCredential && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl border border-border">
-            <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className={dialogStyles.overlay}>
+          <div className={`${dialogStyles.dialog} ${dialogStyles.viewModal}`}>
+            <div className={dialogStyles.dialogHeader}>
               <div>
-                <h3 className="text-lg font-semibold">{viewedCredential.name}</h3>
-                <span className="text-sm text-muted-foreground">{viewedCredential.category}</span>
+                <h3 className={dialogStyles.dialogTitle}>{viewedCredential.name}</h3>
+                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-foreground)' }}>
+                  {viewedCredential.category}
+                </span>
               </div>
               <button
                 onClick={() => setViewingId(null)}
-                className="hover:bg-muted rounded p-1"
+                className={dialogStyles.closeButton}
               >
-                <X className="h-4 w-4" />
+                <X style={{ width: '1rem', height: '1rem' }} />
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
-              <div className="bg-muted/50 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-sm font-medium">Decrypted Data</label>
+            <div className={dialogStyles.viewContent}>
+              <div className={dialogStyles.dataDisplay}>
+                <div className={dialogStyles.dataHeader}>
+                  <label>Decrypted Data</label>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => copyToClipboard(viewedCredential.data)}
                   >
-                    <Copy className="h-3 w-3 mr-2" />
+                    <Copy style={{ width: '0.75rem', height: '0.75rem', marginRight: 'var(--space-2)' }} />
                     Copy
                   </Button>
                 </div>
-                <pre className="text-sm font-mono whitespace-pre-wrap break-all bg-background p-3 rounded border border-border">
+                <pre className={dialogStyles.dataContent}>
                   {viewedCredential.data}
                 </pre>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                <Shield className="h-3 w-3" />
+              <div className={styles.securityBadge}>
+                <Shield />
                 <span>This data was encrypted with AES-256-GCM</span>
               </div>
             </div>

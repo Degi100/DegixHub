@@ -1,0 +1,220 @@
+/* ==========================================
+   Data Management Component Styles
+   ========================================== */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .container {
+    gap: var(--space-6);
+  }
+}
+
+/* Title */
+.title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: var(--text-2xl);
+  }
+}
+
+/* Section Cards */
+.section {
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .section {
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+  }
+}
+
+/* Section Header */
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sectionTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  .sectionTitle {
+    font-size: var(--text-lg);
+  }
+}
+
+.sectionDescription {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .sectionDescription {
+    font-size: var(--text-sm);
+  }
+}
+
+/* Options */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.optionGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.optionLabel {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (min-width: 640px) {
+  .radioGroup {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.radioInput {
+  margin-right: var(--space-2);
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.checkboxInput {
+  margin-right: var(--space-2);
+  cursor: pointer;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* File Input */
+.fileInputWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.fileInput {
+  display: none;
+}
+
+/* Warning Box */
+.warningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: rgba(var(--category-shopping), 0.05);
+  border: 1px solid rgba(var(--category-shopping), 0.2);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 768px) {
+  .warningBox {
+    border-radius: var(--radius-lg);
+  }
+}
+
+.warningIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: rgb(var(--category-shopping));
+}
+
+.warningText {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: rgb(var(--category-shopping));
+}
+
+/* Result Box */
+.resultBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background-color: rgba(var(--category-development), 0.05);
+  border: 1px solid rgba(var(--category-development), 0.2);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 768px) {
+  .resultBox {
+    border-radius: var(--radius-lg);
+  }
+}
+
+.resultTitle {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: rgb(var(--category-development));
+}
+
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: rgba(var(--category-development), 0.9);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.resultList li {
+  padding-left: var(--space-1);
+}
+
+.resultError {
+  color: rgb(var(--category-shopping));
+}

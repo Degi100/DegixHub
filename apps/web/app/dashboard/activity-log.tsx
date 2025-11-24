@@ -2,6 +2,7 @@
 
 import { trpc } from '@/lib/trpc/react';
 import { useRouter } from 'next/navigation';
+import styles from './activity-log.module.css';
 
 interface ActivityLogProps {
   limit?: number;
@@ -28,14 +29,14 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
     return '•';
   };
 
-  const getActionColor = (action: string) => {
-    if (action === 'created') return 'text-green-500';
-    if (action === 'updated') return 'text-blue-500';
-    if (action === 'deleted') return 'text-red-500';
-    if (action === 'viewed') return 'text-gray-400';
-    if (action === 'pinned') return 'text-yellow-500';
-    if (action === 'unpinned') return 'text-gray-400';
-    return 'text-gray-500';
+  const getActionClass = (action: string) => {
+    if (action === 'created') return styles['actionSymbol--created'];
+    if (action === 'updated') return styles['actionSymbol--updated'];
+    if (action === 'deleted') return styles['actionSymbol--deleted'];
+    if (action === 'viewed') return styles['actionSymbol--viewed'];
+    if (action === 'pinned') return styles['actionSymbol--pinned'];
+    if (action === 'unpinned') return styles['actionSymbol--unpinned'];
+    return styles['actionSymbol--default'];
   };
 
   const getResourceTypeSymbol = (resourceType: string) => {
@@ -115,9 +116,9 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <h2 className="text-2xl font-bold">Activity Log</h2>
-        <div className="text-muted-foreground text-sm font-mono">
+      <div className={styles.loading}>
+        <h2 className={styles.title}>Activity Log</h2>
+        <div className={styles.loadingText}>
           Loading...
         </div>
       </div>
@@ -128,71 +129,54 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
   const groupOrder = ['Today', 'Yesterday', 'Last 7 days', 'Older'];
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Activity Log</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Activity Log</h2>
 
       {activities && activities.length > 0 ? (
-        <div className="bg-black/5 dark:bg-white/5 rounded-lg border border-border/50 p-4 font-mono text-sm relative">
-          {/* Custom scrollbar styles */}
-          <style jsx>{`
-            .activity-scroll::-webkit-scrollbar {
-              width: 6px;
-            }
-            .activity-scroll::-webkit-scrollbar-track {
-              background: transparent;
-            }
-            .activity-scroll::-webkit-scrollbar-thumb {
-              background: hsl(var(--muted-foreground) / 0.3);
-              border-radius: 3px;
-            }
-            .activity-scroll::-webkit-scrollbar-thumb:hover {
-              background: hsl(var(--muted-foreground) / 0.5);
-            }
-          `}</style>
+        <div className={styles.logContainer}>
+          <div className={styles.scrollArea}>
+            <div className={styles.groups}>
+              {groupOrder.map((groupName) => {
+                const groupActivities = groupedActivities[groupName];
+                if (!groupActivities || groupActivities.length === 0) return null;
 
-          <div className="activity-scroll space-y-4 max-h-[500px] overflow-y-auto pr-2 relative">
-            {groupOrder.map((groupName) => {
-              const groupActivities = groupedActivities[groupName];
-              if (!groupActivities || groupActivities.length === 0) return null;
-
-              return (
-                <div key={groupName} className="space-y-0.5">
-                  {/* Date group header */}
-                  <div className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2 px-2">
-                    {groupName}
-                  </div>
-
-                  {groupActivities.map((activity: any) => (
-                    <div
-                      key={activity.id}
-                      onClick={() => handleActivityClick(activity)}
-                      className="flex items-center gap-3 py-1.5 px-2 -mx-2 hover:bg-black/5 dark:hover:bg-white/5 rounded transition-colors cursor-pointer"
-                    >
-                      <span className="text-muted-foreground/60 text-xs w-10 text-right shrink-0 tabular-nums">
-                        {formatTime(activity.createdAt)}
-                      </span>
-                      <span className={`${getActionColor(activity.action)} font-bold w-5 text-center shrink-0`}>
-                        {getActionSymbol(activity.action)}
-                      </span>
-                      <span className="text-muted-foreground/80 text-xs shrink-0 min-w-[2.5rem]">
-                        {getResourceTypeSymbol(activity.resourceType)}
-                      </span>
-                      <span className="text-foreground/90 truncate">
-                        {activity.resourceName}
-                      </span>
+                return (
+                  <div key={groupName} className={styles.dateGroup}>
+                    <div className={styles.dateGroupHeader}>
+                      {groupName}
                     </div>
-                  ))}
-                </div>
-              );
-            })}
+
+                    {groupActivities.map((activity: any) => (
+                      <div
+                        key={activity.id}
+                        onClick={() => handleActivityClick(activity)}
+                        className={styles.activityItem}
+                      >
+                        <span className={styles.time}>
+                          {formatTime(activity.createdAt)}
+                        </span>
+                        <span className={`${styles.actionSymbol} ${getActionClass(activity.action)}`}>
+                          {getActionSymbol(activity.action)}
+                        </span>
+                        <span className={styles.resourceType}>
+                          {getResourceTypeSymbol(activity.resourceType)}
+                        </span>
+                        <span className={styles.resourceName}>
+                          {activity.resourceName}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Fade-out gradient at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/5 dark:from-white/5 to-transparent pointer-events-none rounded-b-lg" />
+          <div className={styles.fadeGradient} />
         </div>
       ) : (
-        <div className="bg-black/5 dark:bg-white/5 rounded-lg border border-border/50 p-8 text-center">
-          <p className="text-muted-foreground text-sm font-mono">~ no activity yet ~</p>
+        <div className={styles.emptyState}>
+          <p className={styles.emptyStateText}>~ no activity yet ~</p>
         </div>
       )}
     </div>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/react';
 import Link from 'next/link';
-import styles from '../auth.module.css';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -65,13 +64,18 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.cardInner}>
-          {/* Header with Icon */}
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <div className={`${styles.iconCircle} ${styles['iconCircle--blue']}`}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-8 py-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+              <svg
+                className="w-8 h-8 text-blue-600 dark:text-blue-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -80,19 +84,26 @@ export default function ForgotPasswordPage() {
                 />
               </svg>
             </div>
-            <h1 className={styles.title}>Reset Password</h1>
-            <p className={styles.subtitle}>Use your recovery key to set a new password</p>
+            <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
+              Reset Password
+            </h1>
+            <p className="text-center text-gray-600 dark:text-gray-400">
+              Use your recovery key to set a new password
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className={styles.errorMessage}>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded">
                 {error}
               </div>
             )}
 
-            <div className={styles.formField}>
-              <label htmlFor="username" className={styles.label}>
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Username
               </label>
               <input
@@ -101,13 +112,16 @@ export default function ForgotPasswordPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter your username"
               />
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="recoveryKey" className={styles.label}>
+            <div>
+              <label
+                htmlFor="recoveryKey"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Recovery Key
               </label>
               <input
@@ -116,16 +130,19 @@ export default function ForgotPasswordPage() {
                 value={recoveryKey}
                 onChange={(e) => setRecoveryKey(e.target.value)}
                 required
-                className={`${styles.input} ${styles.inputMono}`}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                 placeholder="XXXX-XXXX-XXXX-XXXX-XXXX..."
               />
-              <p className={styles.helpText}>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 The recovery key you saved during registration
               </p>
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="newPassword" className={styles.label}>
+            <div>
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 New Password
               </label>
               <input
@@ -135,13 +152,16 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 required
                 minLength={8}
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter new password (min 8 characters)"
               />
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="confirmPassword" className={styles.label}>
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Confirm New Password
               </label>
               <input
@@ -151,7 +171,7 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={8}
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Confirm your new password"
               />
             </div>
@@ -159,22 +179,22 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className={styles.submitButton}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
             >
               {isLoading ? 'Resetting password...' : 'Reset Password'}
             </button>
           </form>
 
-          <div className={styles.footerMulti}>
-            <p>
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Remember your password?{' '}
-              <Link href="/auth/login" className={styles.link}>
+              <Link href="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
                 Sign in
               </Link>
             </p>
-            <p className={styles.helpText}>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               Don't have your recovery key?{' '}
-              <span style={{ fontWeight: 500 }}>Contact support</span>
+              <span className="font-medium">Contact support</span>
             </p>
           </div>
         </div>

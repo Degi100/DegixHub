@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/react';
 import Link from 'next/link';
-import styles from '../auth.module.css';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,21 +65,28 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.cardInner}>
-          <h1 className={styles.title}>Create Account</h1>
-          <p className={styles.subtitle}>Join DegixHub</p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-8 py-10">
+          <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
+            Create Account
+          </h1>
+          <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
+            Join DegixHub
+          </p>
 
-          <form onSubmit={handleSubmit} className={styles.form}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className={styles.errorMessage}>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded">
                 {error}
               </div>
             )}
 
-            <div className={styles.formField}>
-              <label htmlFor="username" className={styles.label}>
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Username
               </label>
               <input
@@ -90,13 +96,16 @@ export default function RegisterPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 minLength={3}
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter username"
               />
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="password" className={styles.label}>
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Password
               </label>
               <input
@@ -106,13 +115,16 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter password (min 8 characters)"
               />
             </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="confirmPassword" className={styles.label}>
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Confirm Password
               </label>
               <input
@@ -122,7 +134,7 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={8}
-                className={styles.input}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Confirm your password"
               />
             </div>
@@ -130,15 +142,15 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className={styles.submitButton}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200"
             >
               {isLoading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <p className={styles.footerText}>
+          <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
-            <Link href="/auth/login" className={styles.link}>
+            <Link href="/auth/login" className="text-blue-600 hover:text-blue-500 font-medium">
               Sign in
             </Link>
           </p>

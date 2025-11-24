@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc/react';
 import { Button } from '@/components/ui/button';
 import { Download, Upload, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import styles from './data-management.module.css';
 
 export function DataManagement() {
   const [isExporting, setIsExporting] = useState(false);
@@ -144,14 +145,14 @@ export function DataManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Data Management</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Data Management</h2>
 
       {/* Export Section */}
-      <div className="border rounded-lg bg-card p-6 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Export Data</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>Export Data</h3>
+          <p className={styles.sectionDescription}>
             Download all your links, credentials, and tags as a JSON file. This file contains encrypted
             credentials and can be imported later.
           </p>
@@ -159,97 +160,95 @@ export function DataManagement() {
         <Button
           onClick={handleExport}
           disabled={isExporting}
-          className="gap-2"
         >
-          <Download className="h-4 w-4" />
+          <Download />
           {isExporting ? 'Exporting...' : 'Export All Data'}
         </Button>
       </div>
 
       {/* Import Section */}
-      <div className="border rounded-lg bg-card p-6 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Import Data</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+      <div className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>Import Data</h3>
+          <p className={styles.sectionDescription}>
             Import data from a previously exported JSON file. Choose whether to merge with existing
             data or replace everything.
           </p>
         </div>
 
         {/* Import Options */}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
+        <div className={styles.options}>
+          <div className={styles.optionGroup}>
+            <label className={styles.optionLabel}>
               Import Mode
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center cursor-pointer">
+            <div className={styles.radioGroup}>
+              <label className={styles.radioLabel}>
                 <input
                   type="radio"
                   value="merge"
                   checked={importMode === 'merge'}
                   onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
-                  className="mr-2"
+                  className={styles.radioInput}
                 />
-                <span className="text-sm">
+                <span>
                   Merge (keep existing data)
                 </span>
               </label>
-              <label className="flex items-center cursor-pointer">
+              <label className={styles.radioLabel}>
                 <input
                   type="radio"
                   value="replace"
                   checked={importMode === 'replace'}
                   onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
-                  className="mr-2"
+                  className={styles.radioInput}
                 />
-                <span className="text-sm">
+                <span>
                   Replace (delete all existing data)
                 </span>
               </label>
             </div>
           </div>
 
-          <label className="flex items-center cursor-pointer">
+          <label className={styles.checkboxLabel}>
             <input
               type="checkbox"
               checked={skipDuplicates}
               onChange={(e) => setSkipDuplicates(e.target.checked)}
-              className="mr-2"
+              className={styles.checkboxInput}
             />
-            <span className="text-sm">
+            <span>
               Skip duplicates (recommended)
             </span>
           </label>
         </div>
 
         {/* File Input */}
-        <div className="flex items-center gap-4">
+        <div className={styles.fileInputWrapper}>
           <input
             ref={fileInputRef}
             type="file"
             accept=".json"
             onChange={handleImport}
             disabled={isImporting}
-            className="hidden"
+            className={styles.fileInput}
             id="import-file"
           />
           <Button
             variant="secondary"
             disabled={isImporting}
             onClick={() => fileInputRef.current?.click()}
-            className="gap-2"
           >
-            <Upload className="h-4 w-4" />
+            <Upload />
             {isImporting ? 'Importing...' : 'Choose File to Import'}
           </Button>
         </div>
 
         {/* Warning for Replace Mode */}
         {importMode === 'replace' && (
-          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-            <p className="text-sm text-destructive font-medium">
+          <div className={styles.warningBox}>
+            <AlertTriangle className={styles.warningIcon} />
+            <p className={styles.warningText}>
               Warning: Replace mode will delete ALL your existing data before importing!
             </p>
           </div>
@@ -257,17 +256,17 @@ export function DataManagement() {
 
         {/* Import Result */}
         {importResult && (
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-            <h4 className="text-sm font-medium text-green-800 dark:text-green-400 mb-2">
+          <div className={styles.resultBox}>
+            <h4 className={styles.resultTitle}>
               Import Successful!
             </h4>
-            <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+            <ul className={styles.resultList}>
               <li>• Links imported: {importResult.linksImported}</li>
               <li>• Credentials imported: {importResult.credentialsImported}</li>
               <li>• Tags imported: {importResult.tagsImported}</li>
               {importResult.skipped > 0 && <li>• Skipped duplicates: {importResult.skipped}</li>}
               {importResult.errors.length > 0 && (
-                <li className="text-red-600 dark:text-red-400">
+                <li className={styles.resultError}>
                   • Errors: {importResult.errors.length}
                 </li>
               )}

@@ -1,8 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
   Link as LinkIcon,
   Key,
@@ -11,8 +8,10 @@ import {
   Moon,
   Sun,
   Database,
+  X,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import styles from './sidebar.module.css';
 
 interface SidebarProps {
   onNavigate: (section: 'links' | 'credentials' | 'activity' | 'data-management') => void;
@@ -24,11 +23,12 @@ interface SidebarProps {
     tagsCount: number;
     pinnedCount: number;
   };
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarProps) {
+export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, onClose }: SidebarProps) {
   const { theme, setTheme } = useTheme();
-  const router = useRouter();
 
   const navItems = [
     { id: 'links', label: 'Links', icon: LinkIcon, count: stats.linksCount },
@@ -37,18 +37,36 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
     { id: 'data-management', label: 'Data', icon: Database },
   ];
 
+  const handleNavigate = (section: any) => {
+    onNavigate(section);
+    onClose?.();
+  };
+
   return (
-    <aside className="w-64 h-screen bg-card border-r border-border flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h1 className="text-xl font-bold">DegixHub</h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          {stats.pinnedCount} pinned items
-        </p>
-      </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div className={styles.backdrop} onClick={onClose} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`${styles.sidebar} ${isOpen ? styles['sidebar--open'] : ''}`}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>DegixHub</h1>
+            <p className={styles.subtitle}>
+              {stats.pinnedCount} pinned items
+            </p>
+          </div>
+          {/* Close button for mobile */}
+          <button className={styles.closeButton} onClick={onClose}>
+            <X />
+          </button>
+        </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-2 space-y-1">
+      <nav className={styles.nav}>
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
@@ -56,20 +74,15 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id as any)}
-              className={cn(
-                'w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors',
-                isActive
-                  ? 'bg-secondary text-secondary-foreground'
-                  : 'hover:bg-secondary/50 text-muted-foreground hover:text-foreground'
-              )}
+              onClick={() => handleNavigate(item.id as any)}
+              className={`${styles.navItem} ${isActive ? styles['navItem--active'] : ''}`}
             >
-              <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4" />
+              <div className={styles.navItemContent}>
+                <Icon />
                 <span>{item.label}</span>
               </div>
               {item.count !== undefined && (
-                <span className="text-xs text-muted-foreground">{item.count}</span>
+                <span className={styles.navItemCount}>{item.count}</span>
               )}
             </button>
           );
@@ -77,23 +90,24 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-border p-2 space-y-1">
+      <div className={styles.footer}>
         <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+          className={styles.footerButton}
         >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === 'dark' ? <Sun /> : <Moon />}
           <span>Toggle theme</span>
         </button>
 
         <button
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-destructive/10 text-destructive transition-colors"
+          className={`${styles.footerButton} ${styles['footerButton--logout']}`}
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut />
           <span>Logout</span>
         </button>
       </div>
     </aside>
+    </>
   );
 }
