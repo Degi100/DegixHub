@@ -10,6 +10,7 @@ import { SimpleCredentialsSection } from './simple-credentials-section';
 import { ActivityLog } from './activity-log';
 import { DataManagement } from './data-management';
 import { toast } from 'sonner';
+import styles from './page.module.css';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -106,8 +107,8 @@ export default function DashboardPage() {
 
   if (sessionLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className={styles.loading}>
+        <div className={styles.spinner}></div>
       </div>
     );
   }
@@ -124,7 +125,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={styles.dashboard}>
       {/* Sidebar */}
       <Sidebar
         activeSection={activeSection}
@@ -134,73 +135,77 @@ export default function DashboardPage() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-auto">
+      <main className={styles.main}>
         {/* Header with Search */}
-        <div className="sticky top-0 z-10 bg-background border-b border-border p-4">
+        <div className={styles.searchHeader}>
           <input
             type="text"
             placeholder="Search credentials and links..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full max-w-2xl mx-auto px-4 py-2 bg-muted/50 text-sm rounded-lg border border-border focus:outline-none focus:border-primary focus:bg-background transition-colors"
+            className={styles.searchInput}
           />
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className={styles.content}>
           {/* Content Sections */}
-          <div className="space-y-6">
-            {activeSection === 'links' && (
-              <SimpleLinksSection
-                links={links?.filter((link) => {
-                  if (!searchQuery) return true;
-                  const query = searchQuery.toLowerCase();
-                  return (
-                    link.name.toLowerCase().includes(query) ||
-                    link.url.toLowerCase().includes(query) ||
-                    link.category.toLowerCase().includes(query)
-                  );
-                })}
-                onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
-                onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
-                onCreateLink={(data) => createLinkMutation.mutate(data)}
-                onUpdateLink={(data) => updateLinkMutation.mutate(data)}
-              />
-            )}
+          {activeSection === 'links' && (
+            <SimpleLinksSection
+              links={links?.filter((link) => {
+                if (!searchQuery) return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                  link.name.toLowerCase().includes(query) ||
+                  link.url.toLowerCase().includes(query) ||
+                  link.category.toLowerCase().includes(query)
+                );
+              })}
+              onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
+              onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
+              onCreateLink={(data) => createLinkMutation.mutate(data)}
+              onUpdateLink={(data) => updateLinkMutation.mutate(data)}
+            />
+          )}
 
-            {activeSection === 'credentials' && (
-              <SimpleCredentialsSection
-                credentials={credentials?.filter((cred) => {
-                  if (!searchQuery) return true;
-                  const query = searchQuery.toLowerCase();
-                  return (
-                    cred.name.toLowerCase().includes(query) ||
-                    cred.category.toLowerCase().includes(query)
-                  );
-                })}
-                onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
-                onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
-                onCreateCredential={(data) => createCredentialMutation.mutate(data)}
-              />
-            )}
+          {activeSection === 'credentials' && (
+            <SimpleCredentialsSection
+              credentials={credentials?.filter((cred) => {
+                if (!searchQuery) return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                  cred.name.toLowerCase().includes(query) ||
+                  cred.category.toLowerCase().includes(query)
+                );
+              })}
+              onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
+              onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
+              onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+            />
+          )}
 
-            {activeSection === 'tags' && (
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h2 className="text-2xl font-bold mb-4">Tags</h2>
-                <p className="text-muted-foreground">Tags management coming soon...</p>
-              </div>
-            )}
+          {activeSection === 'tags' && (
+            <div style={{
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-card)',
+              padding: 'var(--space-6)',
+              boxShadow: 'var(--shadow-sm)'
+            }}>
+              <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Tags</h2>
+              <p style={{ color: 'var(--color-muted-foreground)' }}>Tags management coming soon...</p>
+            </div>
+          )}
 
-            {activeSection === 'activity' && (
-              <ActivityLog
-                limit={50}
-                onNavigateToSection={setActiveSection}
-              />
-            )}
+          {activeSection === 'activity' && (
+            <ActivityLog
+              limit={50}
+              onNavigateToSection={setActiveSection}
+            />
+          )}
 
-            {activeSection === 'data-management' && (
-              <DataManagement />
-            )}
-          </div>
+          {activeSection === 'data-management' && (
+            <DataManagement />
+          )}
         </div>
       </main>
 

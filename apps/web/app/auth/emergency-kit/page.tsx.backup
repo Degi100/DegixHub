@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import styles from '../auth.module.css';
+import Link from 'next/link';
 
 function EmergencyKitContent() {
   const router = useRouter();
@@ -73,13 +73,18 @@ If you forget your master password:
   }
 
   return (
-    <div className={styles.container}>
-      <div className={`${styles.card} ${styles.cardWide}`}>
-        <div className={styles.cardInner}>
-          {/* Header with Icon */}
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-            <div className={`${styles.iconCircle} ${styles['iconCircle--yellow']}`}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-2xl">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg px-8 py-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-full mb-4">
+              <svg
+                className="w-8 h-8 text-yellow-600 dark:text-yellow-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -88,61 +93,63 @@ If you forget your master password:
                 />
               </svg>
             </div>
-            <h1 className={styles.title}>Save Your Recovery Key</h1>
-            <p className={styles.subtitle}>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Save Your Recovery Key
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
               This is your only chance to save your recovery key!
             </p>
           </div>
 
           {/* Warning Box */}
-          <div className={styles.warningBox}>
-            <h2 className={styles.warningTitle}>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-6">
+            <h2 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-3">
               Important Security Information
             </h2>
-            <ul className={styles.warningList}>
-              <li>
-                <span>•</span>
+            <ul className="space-y-2 text-sm text-yellow-800 dark:text-yellow-300">
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
                 <span>
                   Your master password <strong>cannot be reset</strong> without this recovery key
                 </span>
               </li>
-              <li>
-                <span>•</span>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
                 <span>
                   If you lose both your master password and recovery key, <strong>all your data will be lost forever</strong>
                 </span>
               </li>
-              <li>
-                <span>•</span>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
                 <span>Store this key in a safe place (safe, bank vault, or secure password manager)</span>
               </li>
-              <li>
-                <span>•</span>
+              <li className="flex items-start">
+                <span className="mr-2">•</span>
                 <span>Never share this key with anyone</span>
               </li>
             </ul>
           </div>
 
           {/* Recovery Key Display */}
-          <div className={styles.formField}>
-            <label className={styles.label}>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Your Recovery Key
             </label>
-            <div className={styles.recoveryKeyBox}>
-              <div className={styles.recoveryKeyDisplay}>
+            <div className="relative">
+              <div className="bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 font-mono text-lg text-center text-gray-900 dark:text-white break-all">
                 {recoveryKey}
               </div>
               <button
                 onClick={handleCopy}
-                className={`${styles.copyButton} ${copied ? styles['copyButton--copied'] : ''}`}
+                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg transition-colors"
                 title="Copy to clipboard"
               >
                 {copied ? (
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -156,12 +163,12 @@ If you forget your master password:
           </div>
 
           {/* Actions */}
-          <div className={styles.actionRow}>
+          <div className="flex gap-3 mb-6">
             <button
               onClick={handleDownloadPDF}
-              className={`${styles.actionButton} ${styles['actionButton--primary']}`}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -173,9 +180,9 @@ If you forget your master password:
             </button>
             <button
               onClick={handleCopy}
-              className={`${styles.actionButton} ${styles['actionButton--secondary']}`}
+              className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -188,15 +195,15 @@ If you forget your master password:
           </div>
 
           {/* Confirmation Checkbox */}
-          <div className={styles.confirmationBox}>
-            <label className={styles.checkboxLabel}>
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+            <label className="flex items-start cursor-pointer">
               <input
                 type="checkbox"
                 checked={confirmed}
                 onChange={(e) => setConfirmed(e.target.checked)}
-                className={styles.checkbox}
+                className="mt-1 mr-3 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <span className={styles.checkboxText}>
+              <span className="text-sm text-gray-700 dark:text-gray-300">
                 I have saved my recovery key in a secure location and understand that{' '}
                 <strong>without it, I cannot recover my account</strong> if I forget my master password.
               </span>
@@ -207,17 +214,12 @@ If you forget your master password:
           <button
             onClick={handleContinue}
             disabled={!confirmed}
-            className={styles.successButton}
+            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-colors"
           >
             Continue to Dashboard
           </button>
 
-          <p style={{
-            marginTop: 'var(--space-4)',
-            textAlign: 'center',
-            fontSize: 'var(--text-xs)',
-            color: 'var(--color-muted-foreground)'
-          }}>
+          <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
             You can also view your recovery key later in Dashboard → Settings
           </p>
         </div>
@@ -228,11 +230,7 @@ If you forget your master password:
 
 export default function EmergencyKitPage() {
   return (
-    <Suspense fallback={
-      <div className={styles.container}>
-        <div style={{ color: 'var(--color-muted-foreground)' }}>Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900"><div className="text-gray-600 dark:text-gray-400">Loading...</div></div>}>
       <EmergencyKitContent />
     </Suspense>
   );

@@ -1,0 +1,138 @@
+/* ==========================================
+   Sidebar Component Styles (Mobile First)
+   ========================================== */
+
+.sidebar {
+  /* Mobile: Hidden by default, show with toggle (future) */
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 80%;
+  max-width: 16rem;
+  height: 100vh;
+  background-color: var(--color-card);
+  border-right: 1px solid var(--color-border);
+  flex-direction: column;
+  z-index: var(--z-fixed);
+}
+
+/* Tablet & Desktop: Always visible */
+@media (min-width: 768px) {
+  .sidebar {
+    display: flex;
+    position: static;
+    width: 16rem;
+  }
+}
+
+/* Header */
+.header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+  margin-top: var(--space-1);
+}
+
+/* Navigation */
+.nav {
+  flex: 1;
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.navItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  transition: all var(--transition-base);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-muted-foreground);
+}
+
+.navItem:hover {
+  background-color: rgba(var(--category-general), 0.05);
+  color: var(--color-foreground);
+}
+
+.navItem--active {
+  background-color: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+}
+
+.navItemContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.navItemContent svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.navItemCount {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.footerButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  transition: all var(--transition-base);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--color-muted-foreground);
+}
+
+.footerButton:hover {
+  background-color: rgba(var(--category-general), 0.05);
+  color: var(--color-foreground);
+}
+
+.footerButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.footerButton--logout {
+  color: var(--color-destructive);
+}
+
+.footerButton--logout:hover {
+  background-color: rgba(var(--category-shopping), 0.1);
+}
