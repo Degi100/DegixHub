@@ -1,4 +1,4 @@
-import { array, minLength, object, optional, pipe, string } from 'valibot';
+import { minLength, object, optional, pipe, string } from 'valibot';
 
 export const TagCreateSchema = object({
   name: pipe(string(), minLength(1, 'Name is required')),
@@ -25,4 +25,12 @@ export const TagUnassignSchema = object({
   tagId: pipe(string(), minLength(1, 'Tag ID is required')),
   linkId: optional(pipe(string(), minLength(1))),
   credentialId: optional(pipe(string(), minLength(1))),
+});
+
+// Schema for exported tag data
+export const TagSchema = object({
+  id: optional(string()),
+  name: string(),
+  color: string(),
+  createdAt: optional(string()),
 });

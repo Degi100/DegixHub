@@ -4,6 +4,7 @@ import { linksRouter } from './routers/links';
 import { credentialsRouter } from './routers/credentials';
 import { tagsRouter } from './routers/tags';
 import { activityLogsRouter } from './routers/activity-logs';
+import { dataExportRouter } from './routers/data-export';
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -15,6 +16,7 @@ export const appRouter = router({
   credentials: credentialsRouter,
   tags: tagsRouter,
   activityLogs: activityLogsRouter,
+  dataExport: dataExportRouter,
 });
 
 export type AppRouter = typeof appRouter;

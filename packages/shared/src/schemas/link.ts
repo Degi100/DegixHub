@@ -20,3 +20,15 @@ export const LinkUpdateSchema = object({
 export const LinkDeleteSchema = object({
   id: pipe(string(), minLength(1, 'ID is required')),
 });
+
+// Schema for exported link data
+export const LinkSchema = object({
+  id: optional(string()),
+  title: string(),
+  url: string(),
+  description: optional(string()),
+  category: optional(string()),
+  favicon: optional(string()),
+  tags: optional(array(string())),
+  createdAt: optional(string()),
+});

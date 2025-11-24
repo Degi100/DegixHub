@@ -18,3 +18,14 @@ export const CredentialUpdateSchema = object({
 export const CredentialDeleteSchema = object({
   id: pipe(string(), minLength(1, 'ID is required')),
 });
+
+// Schema for exported credential data
+export const CredentialSchema = object({
+  id: optional(string()),
+  name: string(),
+  category: optional(string()),
+  encryptedData: string(),
+  iv: string(),
+  tags: optional(array(string())),
+  createdAt: optional(string()),
+});

@@ -8,6 +8,7 @@ import { CredentialsSection } from './credentials-section';
 import { LinksSection } from './links-section';
 import { CommandPalette } from './command-palette';
 import { ActivityLog } from './activity-log';
+import { DataManagement } from './data-management';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function DashboardPage() {
     enabled: !!sessionData?.user,
   });
 
-  const [showExportImport, setShowExportImport] = useState(false);
+  const [showDataManagement, setShowDataManagement] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const createLinkMutation = trpc.links.create.useMutation({
@@ -65,13 +66,6 @@ export default function DashboardPage() {
   const deleteCredentialMutation = trpc.credentials.delete.useMutation({
     onSuccess: () => {
       refetchCredentials();
-    },
-  });
-
-  const importLinksMutation = trpc.links.import.useMutation({
-    onSuccess: () => {
-      refetchLinks();
-      alert('Links imported successfully!');
     },
   });
 
@@ -121,51 +115,6 @@ export default function DashboardPage() {
     logoutMutation.mutate();
   };
 
-  const handleExportData = () => {
-    const exportData = {
-      links: links?.map((link: any) => ({
-        name: link.name,
-        url: link.url,
-        category: link.category,
-        description: link.description,
-      })) || [],
-      credentials: [], // Don't export encrypted credentials for security
-      exportedAt: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `degixhub-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-
-        if (data.links && Array.isArray(data.links) && data.links.length > 0) {
-          if (confirm(`Import ${data.links.length} links?`)) {
-            importLinksMutation.mutate(data.links);
-          }
-        } else {
-          alert('No links found in the import file');
-        }
-      } catch (error) {
-        alert('Invalid JSON file');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -189,39 +138,15 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportImport(!showExportImport)}
-                  className="p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                  title="Export/Import Data"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-                {showExportImport && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                    <button
-                      onClick={() => {
-                        handleExportData();
-                        setShowExportImport(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
-                    >
-                      Export Data
-                    </button>
-                    <label className="block w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg cursor-pointer">
-                      Import Data
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={handleImportData}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => setShowDataManagement(!showDataManagement)}
+                className="p-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                title="Data Management"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+              </button>
               {mounted && <ThemeToggle />}
               <button
                 onClick={handleLogout}
@@ -289,6 +214,12 @@ export default function DashboardPage() {
             onCreateTag={(name, color) => createTagMutation.mutate({ name, color })}
           />
         </div>
+
+        {showDataManagement && (
+          <div className="mt-6">
+            <DataManagement />
+          </div>
+        )}
 
         <div className="mt-6">
           <ActivityLog limit={15} />
