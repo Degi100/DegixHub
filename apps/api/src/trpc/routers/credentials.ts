@@ -237,4 +237,105 @@ export const credentialsRouter = router({
 
       return { success: true, count: credentialValues.length };
     }),
+
+  // Bulk delete credentials
+  bulkDelete: protectedProcedure
+    .input((raw) => parse(object({ ids: array(string()) }), raw))
+    .mutation(async ({ ctx, input }) => {
+      if (input.ids.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      // Verify ownership of all credentials
+      const userCredentials = await db.query.credentials.findMany({
+        where: and(inArray(credentials.id, input.ids), eq(credentials.userId, ctx.user.id)),
+      });
+
+      if (userCredentials.length !== input.ids.length) {
+        throw new Error('Some credentials not found or unauthorized');
+      }
+
+      // Log activity for bulk delete
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'bulk_deleted',
+        resourceType: 'credential',
+        resourceId: null,
+        metadata: { count: input.ids.length, ids: input.ids },
+      });
+
+      // Delete credential tags first (foreign key constraint)
+      await db.delete(credentialTags).where(inArray(credentialTags.credentialId, input.ids));
+
+      // Delete credentials
+      await db.delete(credentials).where(inArray(credentials.id, input.ids));
+
+      return { success: true, count: input.ids.length };
+    }),
+
+  // Bulk assign tags to credentials
+  bulkAssignTags: protectedProcedure
+    .input((raw) =>
+      parse(
+        object({
+          credentialIds: array(string()),
+          tagIds: array(string()),
+        }),
+        raw
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.credentialIds.length === 0 || input.tagIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      // Verify ownership of all credentials
+      const userCredentials = await db.query.credentials.findMany({
+        where: and(
+          inArray(credentials.id, input.credentialIds),
+          eq(credentials.userId, ctx.user.id)
+        ),
+      });
+
+      if (userCredentials.length !== input.credentialIds.length) {
+        throw new Error('Some credentials not found or unauthorized');
+      }
+
+      // Create all combinations of credentialId and tagId
+      const tagValues: Array<{ credentialId: string; tagId: string }> = [];
+      for (const credentialId of input.credentialIds) {
+        for (const tagId of input.tagIds) {
+          // Check if already exists to avoid duplicates
+          const existing = await db.query.credentialTags.findFirst({
+            where: and(
+              eq(credentialTags.credentialId, credentialId),
+              eq(credentialTags.tagId, tagId)
+            ),
+          });
+
+          if (!existing) {
+            tagValues.push({ credentialId, tagId });
+          }
+        }
+      }
+
+      if (tagValues.length > 0) {
+        await db.insert(credentialTags).values(tagValues);
+      }
+
+      // Log activity
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'bulk_tag_assigned',
+        resourceType: 'credential',
+        resourceId: null,
+        metadata: {
+          credentialCount: input.credentialIds.length,
+          tagCount: input.tagIds.length,
+          assignedCount: tagValues.length,
+        },
+      });
+
+      return { success: true, count: tagValues.length };
+    }),
 });

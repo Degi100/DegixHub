@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { TagInput } from './tag-input';
+import { BulkActionsBar } from './bulk-actions-bar';
 
 interface Tag {
   id: string;
@@ -29,6 +30,8 @@ interface LinksSectionProps {
   onUpdateLink: (data: any) => void;
   onDeleteLink: (id: string) => void;
   onCreateTag: (name: string, color: string) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkAssignTags?: (linkIds: string[], tagIds: string[]) => void;
   isLoading?: boolean;
 }
 
@@ -39,6 +42,8 @@ export function LinksSection({
   onUpdateLink,
   onDeleteLink,
   onCreateTag,
+  onBulkDelete,
+  onBulkAssignTags,
   isLoading,
 }: LinksSectionProps) {
   const [isAddingLink, setIsAddingLink] = useState(false);
@@ -46,6 +51,7 @@ export function LinksSection({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [selectedLinkIds, setSelectedLinkIds] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     url: '',
@@ -95,6 +101,38 @@ export function LinksSection({
     setSelectedTags([]);
   };
 
+  // Bulk operations handlers
+  const toggleLinkSelection = (linkId: string) => {
+    if (selectedLinkIds.includes(linkId)) {
+      setSelectedLinkIds(selectedLinkIds.filter((id) => id !== linkId));
+    } else {
+      setSelectedLinkIds([...selectedLinkIds, linkId]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    const allIds = filteredLinks?.map((link) => link.id) || [];
+    setSelectedLinkIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedLinkIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (onBulkDelete && selectedLinkIds.length > 0) {
+      onBulkDelete(selectedLinkIds);
+      setSelectedLinkIds([]);
+    }
+  };
+
+  const handleBulkAssignTags = (tagIds: string[]) => {
+    if (onBulkAssignTags && selectedLinkIds.length > 0) {
+      onBulkAssignTags(selectedLinkIds, tagIds);
+      setSelectedLinkIds([]);
+    }
+  };
+
   // Filter links by search query and selected tags
   const filteredLinks = links?.filter((link) => {
     const query = searchQuery.toLowerCase();
@@ -130,6 +168,19 @@ export function LinksSection({
           </button>
         )}
       </div>
+
+      {/* Bulk Actions Bar */}
+      {!isAddingLink && onBulkDelete && onBulkAssignTags && (
+        <BulkActionsBar
+          selectedCount={selectedLinkIds.length}
+          totalCount={filteredLinks?.length || 0}
+          tags={tags}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onBulkDelete={handleBulkDelete}
+          onBulkAssignTags={handleBulkAssignTags}
+        />
+      )}
 
       {/* Tag Filters */}
       {tags.length > 0 && !isAddingLink && (
@@ -285,7 +336,17 @@ export function LinksSection({
               key={link.id}
               className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-3">
+                {/* Checkbox for bulk selection */}
+                {onBulkDelete && onBulkAssignTags && (
+                  <input
+                    type="checkbox"
+                    checked={selectedLinkIds.includes(link.id)}
+                    onChange={() => toggleLinkSelection(link.id)}
+                    className="mt-1.5 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
                 <div className="flex-1">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     {link.name}

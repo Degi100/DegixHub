@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { trpc } from '@/lib/trpc/react';
 import { generatePassword, DEFAULT_PASSWORD_OPTIONS, type PasswordOptions } from '@/lib/password-generator';
 import { TagInput } from './tag-input';
+import { BulkActionsBar } from './bulk-actions-bar';
 
 interface Tag {
   id: string;
@@ -28,6 +29,8 @@ interface CredentialsSectionProps {
   onUpdateCredential: (data: any) => void;
   onDeleteCredential: (id: string) => void;
   onCreateTag: (name: string, color: string) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkAssignTags?: (credentialIds: string[], tagIds: string[]) => void;
 }
 
 export function CredentialsSection({
@@ -37,6 +40,8 @@ export function CredentialsSection({
   onUpdateCredential,
   onDeleteCredential,
   onCreateTag,
+  onBulkDelete,
+  onBulkAssignTags,
 }: CredentialsSectionProps) {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const { data: viewedCredential } = trpc.credentials.getById.useQuery(
@@ -48,6 +53,7 @@ export function CredentialsSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [selectedCredentialIds, setSelectedCredentialIds] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [showPasswordGenerator, setShowPasswordGenerator] = useState(false);
   const [passwordOptions, setPasswordOptions] = useState<PasswordOptions>(DEFAULT_PASSWORD_OPTIONS);
@@ -104,6 +110,38 @@ export function CredentialsSection({
     navigator.clipboard.writeText(text);
   };
 
+  // Bulk operations handlers
+  const toggleCredentialSelection = (credentialId: string) => {
+    if (selectedCredentialIds.includes(credentialId)) {
+      setSelectedCredentialIds(selectedCredentialIds.filter((id) => id !== credentialId));
+    } else {
+      setSelectedCredentialIds([...selectedCredentialIds, credentialId]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    const allIds = filteredCredentials?.map((cred) => cred.id) || [];
+    setSelectedCredentialIds(allIds);
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedCredentialIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (onBulkDelete && selectedCredentialIds.length > 0) {
+      onBulkDelete(selectedCredentialIds);
+      setSelectedCredentialIds([]);
+    }
+  };
+
+  const handleBulkAssignTags = (tagIds: string[]) => {
+    if (onBulkAssignTags && selectedCredentialIds.length > 0) {
+      onBulkAssignTags(selectedCredentialIds, tagIds);
+      setSelectedCredentialIds([]);
+    }
+  };
+
   const handleGeneratePassword = () => {
     try {
       const password = generatePassword(passwordOptions);
@@ -149,6 +187,19 @@ export function CredentialsSection({
           </button>
         )}
       </div>
+
+      {/* Bulk Actions Bar */}
+      {!isAdding && onBulkDelete && onBulkAssignTags && (
+        <BulkActionsBar
+          selectedCount={selectedCredentialIds.length}
+          totalCount={filteredCredentials?.length || 0}
+          tags={tags}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onBulkDelete={handleBulkDelete}
+          onBulkAssignTags={handleBulkAssignTags}
+        />
+      )}
 
       {/* Tag Filters */}
       {tags.length > 0 && !isAdding && (
@@ -362,7 +413,17 @@ export function CredentialsSection({
               key={cred.id}
               className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
             >
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start gap-3">
+                {/* Checkbox for bulk selection */}
+                {onBulkDelete && onBulkAssignTags && (
+                  <input
+                    type="checkbox"
+                    checked={selectedCredentialIds.includes(cred.id)}
+                    onChange={() => toggleCredentialSelection(cred.id)}
+                    className="mt-1.5 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 dark:text-white">{cred.name}</h3>
                   <div className="flex flex-wrap gap-2 mt-2">

@@ -186,4 +186,99 @@ export const linksRouter = router({
 
       return { success: true, count: linkValues.length };
     }),
+
+  // Bulk delete links
+  bulkDelete: protectedProcedure
+    .input((raw) => parse(object({ ids: array(string()) }), raw))
+    .mutation(async ({ ctx, input }) => {
+      if (input.ids.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      // Verify ownership of all links
+      const userLinks = await db.query.links.findMany({
+        where: and(inArray(links.id, input.ids), eq(links.userId, ctx.user.id)),
+      });
+
+      if (userLinks.length !== input.ids.length) {
+        throw new Error('Some links not found or unauthorized');
+      }
+
+      // Log activity for bulk delete
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'bulk_deleted',
+        resourceType: 'link',
+        resourceId: null,
+        metadata: { count: input.ids.length, ids: input.ids },
+      });
+
+      // Delete link tags first (foreign key constraint)
+      await db.delete(linkTags).where(inArray(linkTags.linkId, input.ids));
+
+      // Delete links
+      await db.delete(links).where(inArray(links.id, input.ids));
+
+      return { success: true, count: input.ids.length };
+    }),
+
+  // Bulk assign tags to links
+  bulkAssignTags: protectedProcedure
+    .input((raw) =>
+      parse(
+        object({
+          linkIds: array(string()),
+          tagIds: array(string()),
+        }),
+        raw
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.linkIds.length === 0 || input.tagIds.length === 0) {
+        return { success: true, count: 0 };
+      }
+
+      // Verify ownership of all links
+      const userLinks = await db.query.links.findMany({
+        where: and(inArray(links.id, input.linkIds), eq(links.userId, ctx.user.id)),
+      });
+
+      if (userLinks.length !== input.linkIds.length) {
+        throw new Error('Some links not found or unauthorized');
+      }
+
+      // Create all combinations of linkId and tagId
+      const tagValues: Array<{ linkId: string; tagId: string }> = [];
+      for (const linkId of input.linkIds) {
+        for (const tagId of input.tagIds) {
+          // Check if already exists to avoid duplicates
+          const existing = await db.query.linkTags.findFirst({
+            where: and(eq(linkTags.linkId, linkId), eq(linkTags.tagId, tagId)),
+          });
+
+          if (!existing) {
+            tagValues.push({ linkId, tagId });
+          }
+        }
+      }
+
+      if (tagValues.length > 0) {
+        await db.insert(linkTags).values(tagValues);
+      }
+
+      // Log activity
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'bulk_tag_assigned',
+        resourceType: 'link',
+        resourceId: null,
+        metadata: {
+          linkCount: input.linkIds.length,
+          tagCount: input.tagIds.length,
+          assignedCount: tagValues.length,
+        },
+      });
+
+      return { success: true, count: tagValues.length };
+    }),
 });
