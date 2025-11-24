@@ -2,6 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
+import { Button } from '@/components/ui/button';
+import { Download, Upload, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 export function DataManagement() {
   const [isExporting, setIsExporting] = useState(false);
@@ -11,35 +14,91 @@ export function DataManagement() {
   const [importResult, setImportResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const exportMutation = trpc.dataExport.exportData.useQuery(undefined, {
-    enabled: false,
-  });
-
-  const importMutation = trpc.dataExport.importData.useMutation();
   const utils = trpc.useUtils();
+  const importMutation = trpc.dataExport.importData.useMutation();
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const data = await exportMutation.refetch();
+      console.log('Starting export...');
 
-      if (data.data) {
-        // Create JSON file
-        const blob = new Blob([JSON.stringify(data.data, null, 2)], {
-          type: 'application/json',
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `degixhub-backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+      // Call the export query directly using utils
+      const data = await utils.client.dataExport.exportData.query();
+      console.log('Data fetched:', data);
+
+      if (data) {
+        const jsonContent = JSON.stringify(data.data, null, 2);
+        const suggestedName = `degixhub-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+        // Check if File System Access API is supported
+        const hasFileSystemAPI = 'showSaveFilePicker' in window;
+        console.log('File System API supported:', hasFileSystemAPI);
+
+        // Use File System Access API for modern browsers
+        if (hasFileSystemAPI) {
+          try {
+            console.log('Opening save dialog...');
+            const handle = await (window as any).showSaveFilePicker({
+              suggestedName,
+              types: [{
+                description: 'JSON Files',
+                accept: { 'application/json': ['.json'] },
+              }],
+            });
+            console.log('File handle received:', handle);
+            const writable = await handle.createWritable();
+            await writable.write(jsonContent);
+            await writable.close();
+            console.log('File written successfully');
+            toast.success('Data exported successfully!');
+          } catch (err: any) {
+            console.error('File System API error:', err);
+            // User cancelled the save dialog
+            if (err.name === 'AbortError') {
+              toast.info('Export cancelled');
+            } else if (err.name === 'NotAllowedError') {
+              // Brave or other privacy-focused browsers might block this
+              console.log('File System API not allowed, falling back to download');
+              // Fall back to download
+              const blob = new Blob([jsonContent], {
+                type: 'application/json',
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = suggestedName;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              toast.success('Data exported successfully!');
+            } else {
+              throw err;
+            }
+          }
+        } else {
+          console.log('Using fallback download method');
+          // Fallback for browsers that don't support File System Access API
+          const blob = new Blob([jsonContent], {
+            type: 'application/json',
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = suggestedName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast.success('Data exported successfully!');
+        }
+      } else {
+        console.error('No data received from export mutation');
+        toast.error('No data to export');
       }
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      toast.error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsExporting(false);
     }
@@ -74,172 +133,147 @@ export function DataManagement() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
+      toast.success('Data imported successfully!');
     } catch (error: any) {
       console.error('Import failed:', error);
-      alert(error.message || 'Import failed. Please check the file format.');
+      toast.error(error.message || 'Import failed. Please check the file format.');
     } finally {
       setIsImporting(false);
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-        Data Management
-      </h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold">Data Management</h2>
 
-      <div className="space-y-6">
-        {/* Export Section */}
-        <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Export Data
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Download all your links, credentials, and tags as a JSON file. This file is encrypted
-            with your credentials and can be imported later.
-          </p>
-          <button
-            onClick={handleExport}
-            disabled={isExporting}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            {isExporting ? 'Exporting...' : 'Export Data'}
-          </button>
-        </div>
-
-        {/* Import Section */}
+      {/* Export Section */}
+      <div className="border rounded-lg bg-card p-6 space-y-4">
         <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Import Data
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          <h3 className="text-lg font-semibold mb-2">Export Data</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Download all your links, credentials, and tags as a JSON file. This file contains encrypted
+            credentials and can be imported later.
+          </p>
+        </div>
+        <Button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          {isExporting ? 'Exporting...' : 'Export All Data'}
+        </Button>
+      </div>
+
+      {/* Import Section */}
+      <div className="border rounded-lg bg-card p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Import Data</h3>
+          <p className="text-sm text-muted-foreground mb-4">
             Import data from a previously exported JSON file. Choose whether to merge with existing
             data or replace everything.
           </p>
-
-          {/* Import Options */}
-          <div className="space-y-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Import Mode
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="merge"
-                    checked={importMode === 'merge'}
-                    onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Merge (keep existing data)
-                  </span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="replace"
-                    checked={importMode === 'replace'}
-                    onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Replace (delete all existing data)
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={skipDuplicates}
-                onChange={(e) => setSkipDuplicates(e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                Skip duplicates (recommended)
-              </span>
-            </label>
-          </div>
-
-          {/* File Input */}
-          <div className="flex items-center gap-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              disabled={isImporting}
-              className="hidden"
-              id="import-file"
-            />
-            <label
-              htmlFor="import-file"
-              className={`bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 cursor-pointer flex items-center gap-2 ${
-                isImporting ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-              {isImporting ? 'Importing...' : 'Choose File to Import'}
-            </label>
-          </div>
-
-          {/* Import Result */}
-          {importResult && (
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <h4 className="text-sm font-medium text-green-800 dark:text-green-400 mb-2">
-                Import Successful!
-              </h4>
-              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                <li>Links imported: {importResult.linksImported}</li>
-                <li>Credentials imported: {importResult.credentialsImported}</li>
-                <li>Tags imported: {importResult.tagsImported}</li>
-                {importResult.skipped > 0 && <li>Skipped duplicates: {importResult.skipped}</li>}
-                {importResult.errors.length > 0 && (
-                  <li className="text-red-600 dark:text-red-400">
-                    Errors: {importResult.errors.length}
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-
-          {/* Warning for Replace Mode */}
-          {importMode === 'replace' && (
-            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-400 font-medium">
-                Warning: Replace mode will delete ALL your existing data before importing!
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* Import Options */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Import Mode
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="merge"
+                  checked={importMode === 'merge'}
+                  onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
+                  className="mr-2"
+                />
+                <span className="text-sm">
+                  Merge (keep existing data)
+                </span>
+              </label>
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="radio"
+                  value="replace"
+                  checked={importMode === 'replace'}
+                  onChange={(e) => setImportMode(e.target.value as 'merge' | 'replace')}
+                  className="mr-2"
+                />
+                <span className="text-sm">
+                  Replace (delete all existing data)
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <label className="flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={skipDuplicates}
+              onChange={(e) => setSkipDuplicates(e.target.checked)}
+              className="mr-2"
+            />
+            <span className="text-sm">
+              Skip duplicates (recommended)
+            </span>
+          </label>
+        </div>
+
+        {/* File Input */}
+        <div className="flex items-center gap-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            disabled={isImporting}
+            className="hidden"
+            id="import-file"
+          />
+          <Button
+            variant="secondary"
+            disabled={isImporting}
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            {isImporting ? 'Importing...' : 'Choose File to Import'}
+          </Button>
+        </div>
+
+        {/* Warning for Replace Mode */}
+        {importMode === 'replace' && (
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive font-medium">
+              Warning: Replace mode will delete ALL your existing data before importing!
+            </p>
+          </div>
+        )}
+
+        {/* Import Result */}
+        {importResult && (
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <h4 className="text-sm font-medium text-green-800 dark:text-green-400 mb-2">
+              Import Successful!
+            </h4>
+            <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
+              <li>• Links imported: {importResult.linksImported}</li>
+              <li>• Credentials imported: {importResult.credentialsImported}</li>
+              <li>• Tags imported: {importResult.tagsImported}</li>
+              {importResult.skipped > 0 && <li>• Skipped duplicates: {importResult.skipped}</li>}
+              {importResult.errors.length > 0 && (
+                <li className="text-red-600 dark:text-red-400">
+                  • Errors: {importResult.errors.length}
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

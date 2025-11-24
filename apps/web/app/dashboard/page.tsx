@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/sidebar';
 import { CommandPalette } from './command-palette';
 import { SimpleLinksSection } from './simple-links-section';
 import { SimpleCredentialsSection } from './simple-credentials-section';
+import { ActivityLog } from './activity-log';
+import { DataManagement } from './data-management';
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
@@ -189,17 +191,14 @@ export default function DashboardPage() {
             )}
 
             {activeSection === 'activity' && (
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h2 className="text-2xl font-bold mb-4">Activity Log</h2>
-                <p className="text-muted-foreground">Activity log coming soon...</p>
-              </div>
+              <ActivityLog
+                limit={50}
+                onNavigateToSection={setActiveSection}
+              />
             )}
 
             {activeSection === 'data-management' && (
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h2 className="text-2xl font-bold mb-4">Data Management</h2>
-                <p className="text-muted-foreground">Import/Export coming soon...</p>
-              </div>
+              <DataManagement />
             )}
           </div>
         </div>

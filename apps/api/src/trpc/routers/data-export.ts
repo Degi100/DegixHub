@@ -11,31 +11,11 @@ export const dataExportRouter = router({
   exportData: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.user.id;
 
-    // Fetch all user data
+    // Fetch all user data (simplified - no relations for now)
     const [userLinks, userCredentials, userTags] = await Promise.all([
-      db.query.links.findMany({
-        where: eq(links.userId, userId),
-        with: {
-          linkTags: {
-            with: {
-              tag: true,
-            },
-          },
-        },
-      }),
-      db.query.credentials.findMany({
-        where: eq(credentials.userId, userId),
-        with: {
-          credentialTags: {
-            with: {
-              tag: true,
-            },
-          },
-        },
-      }),
-      db.query.tags.findMany({
-        where: eq(tags.userId, userId),
-      }),
+      db.select().from(links).where(eq(links.userId, userId)),
+      db.select().from(credentials).where(eq(credentials.userId, userId)),
+      db.select().from(tags).where(eq(tags.userId, userId)),
     ]);
 
     // Format data for export
@@ -43,14 +23,8 @@ export const dataExportRouter = router({
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
       data: {
-        links: userLinks.map((link) => ({
-          ...link,
-          tags: link.linkTags.map((lt) => lt.tag.name),
-        })),
-        credentials: userCredentials.map((cred) => ({
-          ...cred,
-          tags: cred.credentialTags.map((ct) => ct.tag.name),
-        })),
+        links: userLinks,
+        credentials: userCredentials,
         tags: userTags,
       },
     };

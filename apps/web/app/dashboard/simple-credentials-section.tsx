@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Star, Eye, Copy, Trash2, Plus, Shield, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { trpc } from '@/lib/trpc/react';
 
 interface Credential {
   id: string;
@@ -28,11 +29,23 @@ export function SimpleCredentialsSection({
   onCreateCredential,
 }: SimpleCredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     data: '',
     category: 'General',
   });
+
+  // Fetch credential data when viewing
+  const { data: viewedCredential } = trpc.credentials.getById.useQuery(
+    { id: viewingId! },
+    { enabled: !!viewingId }
+  );
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard');
+  };
 
   const sortedCredentials = credentials?.sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
@@ -154,17 +167,9 @@ export function SimpleCredentialsSection({
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => toast.info('View credential')}
+                        onClick={() => setViewingId(viewingId === cred.id ? null : cred.id)}
                       >
                         <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => toast.success('Copied to clipboard')}
-                      >
-                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -192,6 +197,50 @@ export function SimpleCredentialsSection({
           </tbody>
         </table>
       </div>
+
+      {/* View Credential Modal */}
+      {viewingId && viewedCredential && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl border border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div>
+                <h3 className="text-lg font-semibold">{viewedCredential.name}</h3>
+                <span className="text-sm text-muted-foreground">{viewedCredential.category}</span>
+              </div>
+              <button
+                onClick={() => setViewingId(null)}
+                className="hover:bg-muted rounded p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-medium">Decrypted Data</label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(viewedCredential.data)}
+                  >
+                    <Copy className="h-3 w-3 mr-2" />
+                    Copy
+                  </Button>
+                </div>
+                <pre className="text-sm font-mono whitespace-pre-wrap break-all bg-background p-3 rounded border border-border">
+                  {viewedCredential.data}
+                </pre>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                <Shield className="h-3 w-3" />
+                <span>This data was encrypted with AES-256-GCM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
