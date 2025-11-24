@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=file:/data/production.db
+      - PORT=3001
+      - NODE_ENV=production
+      - FRONTEND_URL=${FRONTEND_URL:-https://hub.reneschmidt.de}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    volumes:
+      - hub-data:/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://hub-api.reneschmidt.de}
+      - NODE_ENV=production
+    depends_on:
+      - api
+    networks:
+      - internal
+    restart: unless-stopped
+
+volumes:
+  hub-data:
+    driver: local
+
+networks:
+  internal:
+    driver: bridge
