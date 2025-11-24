@@ -4,7 +4,7 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
 });
@@ -14,7 +14,7 @@ export const sessions = sqliteTable('sessions', {
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  expiresAt: integer('expires_at').notNull(),
 });
 
 export const links = sqliteTable('links', {
@@ -26,7 +26,7 @@ export const links = sqliteTable('links', {
   url: text('url').notNull(),
   category: text('category').notNull(),
   description: text('description'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
 });
@@ -41,7 +41,7 @@ export const credentials = sqliteTable('credentials', {
   encryptedData: text('encrypted_data').notNull(),
   iv: text('iv').notNull(),
   authTag: text('auth_tag').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
 });
