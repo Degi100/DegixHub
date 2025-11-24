@@ -25,8 +25,13 @@ Features:
   - Server Actions (kein API-Layer nötig!)
   - Streaming & Suspense
 
-Styling: Tailwind CSS v4
-State: Zustand (lightweight)
+Styling: CSS Modules + Custom Design System
+  - CSS Variables (Custom Properties)
+  - Mobile-First Responsive Design
+  - RGB-based Category Colors
+  - Dark Mode Support (next-themes)
+  - Zero Runtime CSS-in-JS
+State: React useState/useEffect (lightweight)
 Routing: Next.js App Router
 Type-Safe API: tRPC Client
 
@@ -57,9 +62,11 @@ Deploy:
   - Coolify managed
   - Domain: hub-api.reneschmidt.de
 Database:
-yamlDB: PostgreSQL 16
-  - Coolify Service (bereits vorhanden)
-  - Encrypted connections
+yamlDB: SQLite
+  - Lightweight & Fast
+  - File-based (kein Server nötig)
+  - Perfect für Self-Hosted
+  - Einfache Backups
 
 ORM: Drizzle
   - Moderne Alternative zu Prisma
@@ -69,7 +76,6 @@ ORM: Drizzle
   - Bessere Migrations
 
 Migrations: Drizzle Kit
-Cache: Redis 7 (Sessions/Fast Lookups)
 Security:
 yamlAuth: JWT + Refresh Tokens
 Password: bcrypt (Master-Password)
@@ -110,9 +116,17 @@ Frontend (TypeScript)
     ↕ tRPC (Type-Safe)
 Backend (TypeScript)
     ↕ Drizzle (Type-Safe)
-Database (PostgreSQL)
+Database (SQLite)
 
 = Zero Runtime Type Errors!
+
+Design System:
+CSS Modules (keine Tailwind Bloat)
+    ↕ CSS Variables
+    ↕ Mobile-First Media Queries
+    ↕ Category-Based Colors (RGB)
+
+= Performance + Kontrolle!
 ```
 
 ---
@@ -140,8 +154,10 @@ Database (PostgreSQL)
 🔥 Bun Runtime (next-gen JavaScript)
 🔥 tRPC (Type-Safety ohne GraphQL)
 🔥 Drizzle ORM (moderne Alternative)
+🔥 CSS Modules Design System (Zero Runtime)
 🔥 Client-Side Encryption (Zero-Knowledge)
 🔥 Self-Hosted (volle Kontrolle)
+🔥 Mobile-First Responsive Design
 🔥 Optional: Tauri Desktop (Rust lernen!)
 ```
 
@@ -176,16 +192,14 @@ Domains:
 Container Orchestration:
 yamldocker-compose.yml:
   - hub-web (Next.js)
-  - hub-api (Bun + tRPC)
-  - postgres-hub (PostgreSQL 16)
-  - redis-hub (Redis 7)
+  - hub-api (Bun + tRPC + SQLite)
 
 Networks:
   - public (Frontend)
   - internal (Frontend ↔ API)
-  - db-net (API ↔ Database)
 
 = Isolated & Secure
+= Simplified Architecture
 ```
 
 ---
@@ -199,7 +213,7 @@ Woche 1:
 ✅ Next.js 15 Frontend (RSC)
 ✅ Bun + Hono Backend
 ✅ tRPC Integration
-✅ Drizzle + PostgreSQL
+✅ Drizzle + SQLite
 ✅ Basic Auth (Master-PW)
 
 Woche 2:
@@ -207,6 +221,8 @@ Woche 2:
 ✅ Credentials Encryption
 ✅ Categories & Search
 ✅ Dark Mode
+✅ CSS Modules Design System
+✅ Mobile-First Responsive Design
 ✅ Deploy auf Coolify
 
 → Voll funktionsfähiger Hub!
@@ -240,12 +256,15 @@ Woche 2:
 Frontend:
 - React Server Components (neuestes React)
 - Next.js 15 App Router
-- Modern State Management
+- CSS Modules Design System
+- Mobile-First Responsive Design
+- CSS Variables & Custom Properties
 
 Backend:
 - Bun (Node.js Nachfolger)
 - tRPC (Type-Safe APIs)
 - Drizzle (moderne ORM)
+- SQLite (File-based DB)
 
 Infrastructure:
 - Docker Orchestration
@@ -288,4 +307,4 @@ Keine:
 
 Der Stack in einem Satz:
 
-Next.js 15 Frontend + Bun + tRPC Backend + Drizzle + PostgreSQL, self-hosted auf Hetzner mit Coolify, optional Tauri Desktop-App - Full Type-Safety, moderne Tech, volle Kontrolle.
+Next.js 15 Frontend + CSS Modules Design System + Bun + tRPC Backend + Drizzle + SQLite, self-hosted auf Hetzner mit Coolify, optional Tauri Desktop-App - Full Type-Safety, moderne Tech, volle Kontrolle, mobile-first responsive.
