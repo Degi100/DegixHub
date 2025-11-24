@@ -8,6 +8,7 @@ import {
   Moon,
   Sun,
   Database,
+  X,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import styles from './sidebar.module.css';
@@ -22,9 +23,11 @@ interface SidebarProps {
     tagsCount: number;
     pinnedCount: number;
   };
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarProps) {
+export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, onClose }: SidebarProps) {
   const { theme, setTheme } = useTheme();
 
   const navItems = [
@@ -34,15 +37,33 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
     { id: 'data-management', label: 'Data', icon: Database },
   ];
 
+  const handleNavigate = (section: any) => {
+    onNavigate(section);
+    onClose?.();
+  };
+
   return (
-    <aside className={styles.sidebar}>
-      {/* Header */}
-      <div className={styles.header}>
-        <h1 className={styles.title}>DegixHub</h1>
-        <p className={styles.subtitle}>
-          {stats.pinnedCount} pinned items
-        </p>
-      </div>
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div className={styles.backdrop} onClick={onClose} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`${styles.sidebar} ${isOpen ? styles['sidebar--open'] : ''}`}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div>
+            <h1 className={styles.title}>DegixHub</h1>
+            <p className={styles.subtitle}>
+              {stats.pinnedCount} pinned items
+            </p>
+          </div>
+          {/* Close button for mobile */}
+          <button className={styles.closeButton} onClick={onClose}>
+            <X />
+          </button>
+        </div>
 
       {/* Navigation */}
       <nav className={styles.nav}>
@@ -53,7 +74,7 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id as any)}
+              onClick={() => handleNavigate(item.id as any)}
               className={`${styles.navItem} ${isActive ? styles['navItem--active'] : ''}`}
             >
               <div className={styles.navItemContent}>
@@ -87,5 +108,6 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats }: SidebarP
         </button>
       </div>
     </aside>
+    </>
   );
 }

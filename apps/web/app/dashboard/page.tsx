@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState('links');
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Session check
   const { data: session, isLoading: sessionLoading } = trpc.auth.getSession.useQuery();
@@ -132,12 +133,25 @@ export default function DashboardPage() {
         onNavigate={setActiveSection}
         onLogout={() => logoutMutation.mutate()}
         stats={stats}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content */}
       <main className={styles.main}>
         {/* Header with Search */}
         <div className={styles.searchHeader}>
+          {/* Burger Menu Button (Mobile only) */}
+          <button
+            className={styles.burgerButton}
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
           <input
             type="text"
             placeholder="Search credentials and links..."

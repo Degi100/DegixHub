@@ -2,9 +2,25 @@
    Sidebar Component Styles (Mobile First)
    ========================================== */
 
+/* Mobile Backdrop */
+.backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--z-fixed) - 1);
+  animation: fade-in var(--transition-base);
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
 .sidebar {
-  /* Mobile: Hidden by default, show with toggle (future) */
-  display: none;
+  /* Mobile: Hidden off-screen, slides in when open */
+  display: flex;
   position: fixed;
   top: 0;
   left: 0;
@@ -15,21 +31,62 @@
   border-right: 1px solid var(--color-border);
   flex-direction: column;
   z-index: var(--z-fixed);
+  transform: translateX(-100%);
+  transition: transform var(--transition-base);
+}
+
+.sidebar--open {
+  transform: translateX(0);
 }
 
 /* Tablet & Desktop: Always visible */
 @media (min-width: 768px) {
   .sidebar {
-    display: flex;
     position: static;
     width: 16rem;
+    transform: translateX(0);
   }
 }
 
 /* Header */
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+}
+
+/* Close Button (Mobile only) */
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.closeButton:hover {
+  background-color: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.closeButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .closeButton {
+    display: none;
+  }
 }
 
 .title {
