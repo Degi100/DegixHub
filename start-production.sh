@@ -22,6 +22,17 @@ cd /app/apps/web
 # Check for different standalone locations
 if [ -f ".next/standalone/apps/web/server.js" ]; then
   echo "Starting Next.js standalone server on port 3002..."
+  echo "Checking for static files..."
+  ls -la .next/standalone/apps/web/.next/ 2>/dev/null | head -5 || echo "No .next dir in standalone"
+  # In monorepo, static files should be at the root level
+  if [ ! -d ".next/standalone/apps/web/.next/static" ] && [ -d ".next/static" ]; then
+    echo "Copying static files to standalone directory..."
+    mkdir -p .next/standalone/apps/web/.next
+    cp -r .next/static .next/standalone/apps/web/.next/
+  fi
+  if [ -d "public" ] && [ ! -d ".next/standalone/apps/web/public" ]; then
+    cp -r public .next/standalone/apps/web/
+  fi
   cd .next/standalone/apps/web
   PORT=3002 HOSTNAME=0.0.0.0 node server.js &
 elif [ -f ".next/standalone/server.js" ]; then
