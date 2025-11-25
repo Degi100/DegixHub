@@ -57,6 +57,7 @@ authRoutes.post('/register', async (c) => {
             username: input.username,
           },
           recoveryKey, // Return recovery key to display in Emergency Kit
+          sessionCookie: sessionCookie.serialize(), // Also return cookie for client-side setting
         },
       },
     });
@@ -101,6 +102,7 @@ authRoutes.post('/login', async (c) => {
         id: user.id,
         username: user.username,
       },
+      sessionCookie: sessionCookie.serialize(), // Also return cookie for client-side setting
     });
   } catch (error) {
     console.error('Login error:', error);
