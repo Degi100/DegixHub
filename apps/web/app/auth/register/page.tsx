@@ -29,7 +29,12 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3003/auth/register', {
+      // Use relative URL in production, localhost in development
+      const apiUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:3003/auth/register'
+        : '/api/auth/register';
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
