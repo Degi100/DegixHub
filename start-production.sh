@@ -48,5 +48,20 @@ WEB_PID=$!
 
 echo "Services started - API PID: $API_PID, Web PID: $WEB_PID"
 
+# Debug: Show what ports are actually listening
+sleep 5  # Give services time to start
+echo "=== Port Status ==="
+netstat -tlnp 2>/dev/null | grep -E ":(3002|3003)" || ss -tlnp | grep -E ":(3002|3003)" || echo "Cannot check ports"
+echo "=== Environment Check ==="
+echo "PORT=$PORT"
+echo "HOSTNAME=$HOSTNAME"
+echo "NODE_ENV=$NODE_ENV"
+echo "=== Testing Services ==="
+curl -I http://localhost:3002 2>/dev/null | head -3 || echo "Frontend not responding on 3002"
+curl http://localhost:3003 2>/dev/null | head -3 || echo "API not responding on 3003"
+echo "=== Container Network ==="
+ip addr show 2>/dev/null | grep inet || echo "Cannot show network info"
+echo "==================="
+
 # Wait for both processes
 wait $API_PID $WEB_PID

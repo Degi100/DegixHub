@@ -22,6 +22,9 @@ app.get('/', (c) => {
     message: 'DegixHub API',
     version: '0.1.0',
     status: 'running',
+    port: process.env.PORT || 3003,
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
   });
 });
 
