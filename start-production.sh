@@ -6,8 +6,9 @@ echo "Starting production services..."
 # Make absolutely sure no dist folder exists
 rm -rf /app/apps/api/dist
 
-# Set custom ports
+# Set custom ports and environment
 export PORT=3003  # API port
+export NODE_ENV=${NODE_ENV:-production}  # Default to production if not set
 
 # Start API directly with Bun on port 3003
 cd /app/apps/api
@@ -60,7 +61,13 @@ echo "=== Testing Services ==="
 curl -I http://localhost:3002 2>/dev/null | head -3 || echo "Frontend not responding on 3002"
 curl http://localhost:3003 2>/dev/null | head -3 || echo "API not responding on 3003"
 echo "=== Container Network ==="
-ip addr show 2>/dev/null | grep inet || echo "Cannot show network info"
+hostname -I 2>/dev/null || echo "Cannot get IP"
+echo "=== Listening Ports ==="
+netstat -tln 2>/dev/null || lsof -i -P -n 2>/dev/null | grep LISTEN || echo "Cannot check listening ports"
+echo "=== Coolify/Docker Info ==="
+echo "Container ID: $(hostname)"
+echo "All ENV vars with PORT or URL:"
+env | grep -E "(PORT|URL|HOST)" || echo "No relevant env vars"
 echo "==================="
 
 # Wait for both processes
