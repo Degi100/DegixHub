@@ -6,16 +6,16 @@ services:
       context: .
       dockerfile: Dockerfile  # Nixpacks generiert das
     ports:
-      - "3000:3000"
-      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
     environment:
       # API Env Vars
       - DATABASE_URL=file:/data/production.db
-      - PORT=3001
+      - PORT=3003
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - FRONTEND_URL=${FRONTEND_URL:-http://degixhub.94.130.185.204.sslip.io}
       # Web Env Vars
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001/trpc}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3003/trpc}
       - NODE_ENV=production
     volumes:
       - hub-data:/data
@@ -25,7 +25,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.degixhub.rule=Host(`degixhub.94.130.185.204.sslip.io`)"
       - "traefik.http.routers.degixhub.entrypoints=http"
-      - "traefik.http.services.degixhub.loadbalancer.server.port=3000"
+      - "traefik.http.services.degixhub.loadbalancer.server.port=3002"
 
 volumes:
   hub-data:
