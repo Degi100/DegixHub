@@ -10,9 +10,10 @@ cmds = [
 [phases.build]
 cmds = [
   "export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm run build",
+  "rm -rf /app/apps/api/dist",  # DELETE dist folder after build
   "cp -r /root/.bun /app/.bun"  # Copy bun to app directory for runtime
 ]
 
 [start]
-# Force API to run from source - v2
-cmd = "export BUN_INSTALL=\"/app/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && cd /app/apps/api && rm -rf dist && cd /app && pnpm start"
+# Use custom start script to bypass pnpm issues
+cmd = "export BUN_INSTALL=\"/app/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && chmod +x /app/start-production.sh && /app/start-production.sh"
