@@ -35,7 +35,7 @@ yarn-error.log*
 *.db-shm
 *.db-wal
 local.db*
-drizzle/
+# drizzle/ - Removed to include migrations in git
 
 # TypeScript
 *.tsbuildinfo
