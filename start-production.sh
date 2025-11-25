@@ -25,7 +25,17 @@ if [ -f ".next/standalone/server.js" ]; then
   PORT=3002 HOSTNAME=0.0.0.0 node server.js &
 elif [ -d ".next" ]; then
   echo "No standalone build found, using regular Next.js start on port 3002..."
-  PORT=3002 node node_modules/.bin/next start &
+  # Use pnpm to run next start (already configured with port 3002 in package.json)
+  if [ -f "package.json" ]; then
+    if command -v pnpm &> /dev/null; then
+      pnpm start &
+    else
+      npm run start &
+    fi
+  else
+    echo "ERROR: No package.json found!"
+    exit 1
+  fi
 else
   echo "ERROR: No .next build directory found!"
   exit 1
