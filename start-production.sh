@@ -18,13 +18,22 @@ API_PID=$!
 # Start Web with Next.js on port 3002
 cd /app/apps/web
 
-# Check for standalone build
-if [ -f ".next/standalone/server.js" ]; then
-  echo "Found standalone server.js - starting Next.js standalone on port 3002..."
+# Debug: Check what files exist
+echo "Checking for Next.js build files..."
+ls -la .next/standalone/ 2>/dev/null || echo "No .next/standalone directory"
+ls -la .next/ 2>/dev/null | head -5 || echo "No .next directory"
+
+# Check for different standalone locations
+if [ -f ".next/standalone/apps/web/server.js" ]; then
+  echo "Found standalone server at .next/standalone/apps/web/server.js"
+  cd .next/standalone/apps/web
+  PORT=3002 HOSTNAME=0.0.0.0 node server.js &
+elif [ -f ".next/standalone/server.js" ]; then
+  echo "Found standalone server at .next/standalone/server.js"
   cd .next/standalone
   PORT=3002 HOSTNAME=0.0.0.0 node server.js &
 elif [ -d ".next" ]; then
-  echo "No standalone build found, using regular Next.js start on port 3002..."
+  echo "Warning: Standalone build expected but not found, falling back to regular start..."
   # Use pnpm to run next start (already configured with port 3002 in package.json)
   if [ -f "package.json" ]; then
     if command -v pnpm &> /dev/null; then
