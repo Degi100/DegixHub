@@ -4,8 +4,12 @@ import { trpcServer } from '@hono/trpc-server';
 import { appRouter } from './trpc/router';
 import { createContext } from './trpc/index';
 import authRoutes from './routes/auth';
+import { initDatabase } from './db/init';
 
 const app = new Hono();
+
+// Initialize database on startup
+await initDatabase().catch(console.error);
 
 // CORS middleware
 app.use(
