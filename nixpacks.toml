@@ -1,6 +1,6 @@
 [phases.setup]
 nixPkgs = ["nodejs_22", "pnpm"]
-aptPkgs = ["unzip"]
+aptPkgs = ["unzip", "curl"]
 
 [phases.install]
 cmds = [
@@ -9,8 +9,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm run build"
+  "export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm run build",
+  "cp -r /root/.bun /app/.bun"  # Copy bun to app directory for runtime
 ]
 
 [start]
-cmd = "pnpm start"
+cmd = "export BUN_INSTALL=\"/app/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && pnpm start"

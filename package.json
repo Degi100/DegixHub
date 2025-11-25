@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --parallel dev",
     "build": "pnpm --recursive build",
+    "start": "pnpm --parallel start",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
