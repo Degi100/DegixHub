@@ -16,7 +16,11 @@ API_PID=$!
 
 # Start Web with Next.js on port 3002
 cd /app/apps/web
-PORT=3002 npm run start &
+if [ -f ".next/standalone/server.js" ]; then
+  PORT=3002 node .next/standalone/server.js &
+else
+  PORT=3002 npm run start &
+fi
 WEB_PID=$!
 
 # Wait for both processes
