@@ -1,0 +1,8 @@
+# Bun configuration
+[run]
+# Disable warnings for files outside project directory
+quiet = ["warn"]
+
+# Alternative: Set watch paths to include shared packages
+# But this would watch too many files
+# watchPaths = ["../../packages/shared"]

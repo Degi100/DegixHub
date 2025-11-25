@@ -7,12 +7,12 @@ services:
       context: .
       dockerfile: Dockerfile  # Nixpacks generiert das
     ports:
-      - "3000:3000"  # Web Frontend
-      - "3001:3001"  # API Backend
+      - "3002:3002"  # Web Frontend
+      - "3003:3003"  # API Backend
     environment:
       # API Env Vars
       - DATABASE_URL=file:/data/production.db
-      - PORT=3001
+      - PORT=3003
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - FRONTEND_URL=${FRONTEND_URL:-https://hub.reneschmidt.de}
       # Web Env Vars
@@ -22,7 +22,7 @@ services:
       - hub-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
       interval: 30s
       timeout: 10s
       retries: 3
