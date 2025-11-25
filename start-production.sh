@@ -11,17 +11,28 @@ export PORT=3003  # API port
 
 # Start API directly with Bun on port 3003
 cd /app/apps/api
+echo "Starting API on port 3003..."
 PORT=3003 bun src/index.ts &
 API_PID=$!
 
 # Start Web with Next.js on port 3002
 cd /app/apps/web
+
+# Check for standalone build
 if [ -f ".next/standalone/server.js" ]; then
-  PORT=3002 node .next/standalone/server.js &
+  echo "Found standalone server.js - starting Next.js standalone on port 3002..."
+  cd .next/standalone
+  PORT=3002 HOSTNAME=0.0.0.0 node server.js &
+elif [ -d ".next" ]; then
+  echo "No standalone build found, using regular Next.js start on port 3002..."
+  PORT=3002 node node_modules/.bin/next start &
 else
-  PORT=3002 npm run start &
+  echo "ERROR: No .next build directory found!"
+  exit 1
 fi
 WEB_PID=$!
+
+echo "Services started - API PID: $API_PID, Web PID: $WEB_PID"
 
 # Wait for both processes
 wait $API_PID $WEB_PID
