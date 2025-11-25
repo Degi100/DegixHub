@@ -26,6 +26,7 @@ export const CredentialSchema = object({
   category: optional(string()),
   encryptedData: string(),
   iv: string(),
+  authTag: string(),
   tags: optional(array(string())),
   createdAt: optional(string()),
 });

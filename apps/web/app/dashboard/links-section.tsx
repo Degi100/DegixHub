@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { TagInput } from './tag-input';
 import { BulkActionsBar } from './bulk-actions-bar';
 
 interface Tag {
@@ -31,7 +30,6 @@ interface LinksSectionProps {
   onUpdateLink: (data: any) => void;
   onDeleteLink: (id: string) => void;
   onTogglePin: (id: string) => void;
-  onCreateTag: (name: string, color: string) => void;
   onBulkDelete?: (ids: string[]) => void;
   onBulkAssignTags?: (linkIds: string[], tagIds: string[]) => void;
   isLoading?: boolean;
@@ -44,7 +42,6 @@ export function LinksSection({
   onUpdateLink,
   onDeleteLink,
   onTogglePin,
-  onCreateTag,
   onBulkDelete,
   onBulkAssignTags,
   isLoading,
@@ -436,12 +433,25 @@ export function LinksSection({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Tags
               </label>
-              <TagInput
-                selectedTags={selectedTags}
-                availableTags={tags}
-                onTagsChange={setSelectedTags}
-                onCreateTag={onCreateTag}
-              />
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <label key={tag.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedTags.some(t => t.id === tag.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTags([...selectedTags, tag]);
+                        } else {
+                          setSelectedTags(selectedTags.filter(t => t.id !== tag.id));
+                        }
+                      }}
+                      className="mr-2"
+                    />
+                    <span style={{ color: tag.color }}>{tag.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="flex space-x-2">
               <button
