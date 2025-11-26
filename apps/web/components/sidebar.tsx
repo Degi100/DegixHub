@@ -9,17 +9,19 @@ import {
   Sun,
   Database,
   X,
+  FileText,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import styles from './sidebar.module.css';
 
 interface SidebarProps {
-  onNavigate: (section: 'links' | 'credentials' | 'activity' | 'data-management') => void;
+  onNavigate: (section: 'links' | 'credentials' | 'notes' | 'activity' | 'data-management') => void;
   activeSection: string;
   onLogout: () => void;
   stats: {
     linksCount: number;
     credentialsCount: number;
+    notesCount: number;
     tagsCount: number;
     pinnedCount: number;
   };
@@ -33,6 +35,7 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, on
   const navItems = [
     { id: 'links', label: 'Links', icon: LinkIcon, count: stats.linksCount },
     { id: 'credentials', label: 'Credentials', icon: Key, count: stats.credentialsCount },
+    { id: 'notes', label: 'Notes', icon: FileText, count: stats.notesCount },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'data-management', label: 'Data', icon: Database },
   ];

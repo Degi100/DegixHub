@@ -79,13 +79,41 @@ export const credentialTags = sqliteTable('credential_tags', {
     .references(() => tags.id, { onDelete: 'cascade' }),
 });
 
+export const notes = sqliteTable('notes', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  content: text('content').notNull(), // Markdown content
+  category: text('category').notNull(),
+  isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
+  linkedLinkId: text('linked_link_id').references(() => links.id, { onDelete: 'set null' }),
+  linkedCredentialId: text('linked_credential_id').references(() => credentials.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export const noteTags = sqliteTable('note_tags', {
+  noteId: text('note_id')
+    .notNull()
+    .references(() => notes.id, { onDelete: 'cascade' }),
+  tagId: text('tag_id')
+    .notNull()
+    .references(() => tags.id, { onDelete: 'cascade' }),
+});
+
 export const activityLogs = sqliteTable('activity_logs', {
   id: text('id').primaryKey(),
   userId: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   action: text('action').notNull(), // 'created', 'updated', 'deleted', 'viewed', 'copied'
-  resourceType: text('resource_type').notNull(), // 'credential', 'link', 'tag'
+  resourceType: text('resource_type').notNull(), // 'credential', 'link', 'tag', 'note'
   resourceId: text('resource_id'), // ID of the resource (null if deleted)
   resourceName: text('resource_name').notNull(), // Name for display
   oldValue: text('old_value'), // Encrypted old value (for updates)

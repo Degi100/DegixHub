@@ -6,6 +6,7 @@ import { db } from '../../db';
 import { links, linkTags, tags } from '../../db/schema';
 import { router, protectedProcedure } from '../index';
 import { logActivity } from '../../lib/activity-logger';
+import { fetchLinkMetadata } from '../../lib/meta-fetcher';
 
 export const linksRouter = router({
   // Get all links for the current user
@@ -185,6 +186,14 @@ export const linksRouter = router({
       await db.insert(links).values(linkValues);
 
       return { success: true, count: linkValues.length };
+    }),
+
+  // Fetch metadata for a URL
+  fetchMetadata: protectedProcedure
+    .input((raw) => parse(object({ url: pipe(string(), minLength(1)) }), raw))
+    .query(async ({ input }) => {
+      const metadata = await fetchLinkMetadata(input.url);
+      return metadata;
     }),
 
   // Bulk delete links

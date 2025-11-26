@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/sidebar';
 import { CommandPalette } from './command-palette';
 import { SimpleLinksSection } from './simple-links-section';
 import { SimpleCredentialsSection } from './simple-credentials-section';
+import { NotesSection } from './notes-section';
 import { ActivityLog } from './activity-log';
 import { DataManagement } from './data-management';
 import { toast } from 'sonner';
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   // Fetch data
   const { data: links, refetch: refetchLinks } = trpc.links.getAll.useQuery();
   const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
+  const { data: notes, refetch: refetchNotes } = trpc.notes.getAll.useQuery();
 
   // Link Mutations
   const createLinkMutation = trpc.links.create.useMutation({
@@ -77,6 +79,35 @@ export default function DashboardPage() {
     },
   });
 
+  // Note Mutations
+  const createNoteMutation = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      refetchNotes();
+      toast.success('Note created');
+    },
+  });
+
+  const updateNoteMutation = trpc.notes.update.useMutation({
+    onSuccess: () => {
+      refetchNotes();
+      toast.success('Note updated');
+    },
+  });
+
+  const toggleNotePinMutation = trpc.notes.togglePin.useMutation({
+    onSuccess: () => {
+      refetchNotes();
+      toast.success('Note updated');
+    },
+  });
+
+  const deleteNoteMutation = trpc.notes.delete.useMutation({
+    onSuccess: () => {
+      refetchNotes();
+      toast.success('Note deleted');
+    },
+  });
+
   // Auth Mutation
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: (data) => {
@@ -121,8 +152,12 @@ export default function DashboardPage() {
   const stats = {
     linksCount: links?.length || 0,
     credentialsCount: credentials?.length || 0,
+    notesCount: notes?.length || 0,
     tagsCount: 0,
-    pinnedCount: (links?.filter((l) => l.isPinned).length || 0) + (credentials?.filter((c) => c.isPinned).length || 0),
+    pinnedCount:
+      (links?.filter((l) => l.isPinned).length || 0) +
+      (credentials?.filter((c) => c.isPinned).length || 0) +
+      (notes?.filter((n) => n.isPinned).length || 0),
   };
 
   return (
@@ -194,6 +229,17 @@ export default function DashboardPage() {
               onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
               onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
               onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+            />
+          )}
+
+          {activeSection === 'notes' && (
+            <NotesSection
+              notes={notes || []}
+              searchQuery={searchQuery}
+              onCreate={(data) => createNoteMutation.mutate(data)}
+              onUpdate={(id, data) => updateNoteMutation.mutate({ id, ...data })}
+              onDelete={(id) => deleteNoteMutation.mutate({ id })}
+              onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
             />
           )}
 
