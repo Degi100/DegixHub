@@ -26,6 +26,8 @@ interface Note {
 interface Props {
   notes: Note[];
   searchQuery: string;
+  links?: Array<{ id: string; name: string; url: string }>;
+  credentials?: Array<{ id: string; name: string }>;
   onCreate: (note: {
     title: string;
     content: string;
@@ -44,12 +46,18 @@ function NoteCard({
   onTogglePin,
   onEdit,
   onDelete,
+  links,
+  credentials,
 }: {
   note: Note;
   onTogglePin: (id: string) => void;
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
+  links: Array<{ id: string; name: string; url: string }>;
+  credentials: Array<{ id: string; name: string }>;
 }) {
+  const linkedLink = links.find(l => l.id === note.linkedLinkId);
+  const linkedCredential = credentials.find(c => c.id === note.linkedCredentialId);
   const categoryClass = note.category.toLowerCase();
 
   return (
@@ -70,15 +78,39 @@ function NoteCard({
         <p className={styles.cardDescription}>
           {note.content.slice(0, 150)}{note.content.length > 150 ? '...' : ''}
         </p>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {note.linkedLinkId && (
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)' }} title="Linked to a Link">
-              <LinkIcon style={{ width: '0.875rem', height: '0.875rem', display: 'inline', verticalAlign: 'middle' }} />
-            </span>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
+          {linkedLink && (
+            <a
+              href={linkedLink.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-primary)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title={`Link: ${linkedLink.name}`}
+            >
+              <LinkIcon style={{ width: '0.875rem', height: '0.875rem' }} />
+              <span>{linkedLink.name}</span>
+            </a>
           )}
-          {note.linkedCredentialId && (
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)' }} title="Linked to a Credential">
-              <Key style={{ width: '0.875rem', height: '0.875rem', display: 'inline', verticalAlign: 'middle' }} />
+          {linkedCredential && (
+            <span
+              style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-muted-foreground)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title={`Credential: ${linkedCredential.name}`}
+            >
+              <Key style={{ width: '0.875rem', height: '0.875rem' }} />
+              <span>{linkedCredential.name}</span>
             </span>
           )}
           {note.tags.map((tag) => (
@@ -144,6 +176,8 @@ function NoteCard({
 export function NotesSection({
   notes,
   searchQuery,
+  links = [],
+  credentials = [],
   onCreate,
   onUpdate,
   onDelete,
@@ -155,6 +189,8 @@ export function NotesSection({
     title: '',
     content: '',
     category: 'General',
+    linkedLinkId: '',
+    linkedCredentialId: '',
   });
 
   // Filter notes
@@ -186,8 +222,8 @@ export function NotesSection({
     } else {
       onCreate({
         ...formData,
-        linkedLinkId: undefined,
-        linkedCredentialId: undefined,
+        linkedLinkId: formData.linkedLinkId || undefined,
+        linkedCredentialId: formData.linkedCredentialId || undefined,
       });
     }
 
@@ -200,6 +236,8 @@ export function NotesSection({
       title: note.title,
       content: note.content,
       category: note.category,
+      linkedLinkId: note.linkedLinkId || '',
+      linkedCredentialId: note.linkedCredentialId || '',
     });
     setShowDialog(true);
   };
@@ -207,7 +245,7 @@ export function NotesSection({
   const handleCancel = () => {
     setShowDialog(false);
     setEditingNote(null);
-    setFormData({ title: '', content: '', category: 'General' });
+    setFormData({ title: '', content: '', category: 'General', linkedLinkId: '', linkedCredentialId: '' });
   };
 
   return (
@@ -269,6 +307,36 @@ export function NotesSection({
                   <option value="Documentation">Documentation</option>
                 </select>
               </div>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Link to Link (optional)</label>
+                <select
+                  value={formData.linkedLinkId}
+                  onChange={(e) => setFormData({ ...formData, linkedLinkId: e.target.value })}
+                  className={dialogStyles.input}
+                >
+                  <option value="">-- None --</option>
+                  {links.map((link) => (
+                    <option key={link.id} value={link.id}>
+                      {link.name} ({link.url})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Link to Credential (optional)</label>
+                <select
+                  value={formData.linkedCredentialId}
+                  onChange={(e) => setFormData({ ...formData, linkedCredentialId: e.target.value })}
+                  className={dialogStyles.input}
+                >
+                  <option value="">-- None --</option>
+                  {credentials.map((cred) => (
+                    <option key={cred.id} value={cred.id}>
+                      {cred.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className={dialogStyles.formActions}>
                 <Button type="submit" style={{ flex: 1 }}>{editingNote ? 'Update' : 'Add'} Note</Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
@@ -293,6 +361,8 @@ export function NotesSection({
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDelete}
+                links={links}
+                credentials={credentials}
               />
             ))}
           </div>
@@ -317,6 +387,8 @@ export function NotesSection({
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDelete}
+                links={links}
+                credentials={credentials}
               />
             ))}
           </div>

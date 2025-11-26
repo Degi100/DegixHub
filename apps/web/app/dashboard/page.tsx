@@ -236,6 +236,8 @@ export default function DashboardPage() {
             <NotesSection
               notes={notes || []}
               searchQuery={searchQuery}
+              links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
+              credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
               onCreate={(data) => createNoteMutation.mutate(data)}
               onUpdate={(id, data) => {
                 const cleanData: any = { ...data };
