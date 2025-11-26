@@ -17,6 +17,9 @@ async function proxyRequest(request: NextRequest) {
     const trpcPath = url.pathname.replace('/api/trpc', '/trpc');
     const targetUrl = `${API_URL}${trpcPath}${url.search}`;
 
+    console.log(`[tRPC Proxy] ${request.method} ${targetUrl}`);
+    console.log(`[tRPC Proxy] API_URL: ${API_URL}`);
+
     // Forward all headers from the original request
     const headers = new Headers();
     request.headers.forEach((value, key) => {
@@ -25,6 +28,8 @@ async function proxyRequest(request: NextRequest) {
         headers.set(key, value);
       }
     });
+
+    console.log(`[tRPC Proxy] Request Cookie:`, request.headers.get('cookie'));
 
     // Get request body if present (for POST requests)
     const body = request.method !== 'GET' && request.method !== 'HEAD'
@@ -38,9 +43,13 @@ async function proxyRequest(request: NextRequest) {
       body: body ? Buffer.from(body) : undefined,
     });
 
+    console.log(`[tRPC Proxy] Response status: ${apiResponse.status}`);
+    console.log(`[tRPC Proxy] Response Set-Cookie:`, apiResponse.headers.get('set-cookie'));
+
     // Get all response headers
     const responseHeaders = new Headers();
     apiResponse.headers.forEach((value, key) => {
+      console.log(`[tRPC Proxy] Header: ${key} = ${value}`);
       responseHeaders.set(key, value);
     });
 
@@ -54,7 +63,7 @@ async function proxyRequest(request: NextRequest) {
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('[tRPC Proxy] Error:', error);
     return NextResponse.json(
       { error: 'Proxy request failed' },
       { status: 502 }
