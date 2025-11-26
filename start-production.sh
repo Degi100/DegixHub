@@ -24,17 +24,31 @@ if [ -f ".next/standalone/apps/web/server.js" ]; then
   echo "Starting Next.js standalone server on port 3002..."
   echo "Checking for static files..."
   ls -la .next/standalone/apps/web/.next/ 2>/dev/null | head -5 || echo "No .next dir in standalone"
+
   # In monorepo, static files should be at the root level
   if [ ! -d ".next/standalone/apps/web/.next/static" ] && [ -d ".next/static" ]; then
     echo "Copying static files to standalone directory..."
     mkdir -p .next/standalone/apps/web/.next
     cp -r .next/static .next/standalone/apps/web/.next/
   fi
+
+  # Copy public directory
   if [ -d "public" ] && [ ! -d ".next/standalone/apps/web/public" ]; then
+    echo "Copying public directory..."
     cp -r public .next/standalone/apps/web/
   fi
+
+  # CRITICAL: Copy app directory with API routes
+  if [ -d "app" ] && [ ! -d ".next/standalone/apps/web/app" ]; then
+    echo "Copying app directory (including API routes)..."
+    cp -r app .next/standalone/apps/web/
+  fi
+
+  echo "Checking if API routes exist in standalone:"
+  ls -la .next/standalone/apps/web/app/api/ 2>/dev/null || echo "WARNING: No API routes found in standalone!"
+
   cd .next/standalone/apps/web
-  PORT=3002 HOSTNAME=0.0.0.0 node server.js &
+  PORT=3002 HOSTNAME=0.0.0.0 API_URL=http://localhost:3003 node server.js &
 elif [ -f ".next/standalone/server.js" ]; then
   echo "Starting Next.js standalone server on port 3002..."
   cd .next/standalone
