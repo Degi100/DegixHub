@@ -237,7 +237,13 @@ export default function DashboardPage() {
               notes={notes || []}
               searchQuery={searchQuery}
               onCreate={(data) => createNoteMutation.mutate(data)}
-              onUpdate={(id, data) => updateNoteMutation.mutate({ id, ...data })}
+              onUpdate={(id, data) => {
+                const cleanData: any = { ...data };
+                if (cleanData.isPinned === null) cleanData.isPinned = undefined;
+                if (cleanData.linkedLinkId === null) cleanData.linkedLinkId = undefined;
+                if (cleanData.linkedCredentialId === null) cleanData.linkedCredentialId = undefined;
+                updateNoteMutation.mutate({ id, ...cleanData });
+              }}
               onDelete={(id) => deleteNoteMutation.mutate({ id })}
               onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
             />

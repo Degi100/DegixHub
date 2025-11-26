@@ -14,7 +14,7 @@ type ActivityAction =
   | 'bulk_tag_assigned'
   | 'data_exported'
   | 'data_imported';
-type ResourceType = 'credential' | 'link' | 'tag' | 'export' | 'import';
+type ResourceType = 'credential' | 'link' | 'tag' | 'note' | 'export' | 'import';
 
 interface LogActivityParams {
   userId: string;

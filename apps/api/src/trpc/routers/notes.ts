@@ -26,7 +26,7 @@ export const notesRouter = router({
           .from(noteTags)
           .where(eq(noteTags.noteId, note.id));
 
-        let noteTagsData = [];
+        let noteTagsData: typeof tags.$inferSelect[] = [];
         if (noteTagRecords.length > 0) {
           const tagIds = noteTagRecords.map((nt) => nt.tagId);
           noteTagsData = await db
@@ -74,7 +74,7 @@ export const notesRouter = router({
         .from(noteTags)
         .where(eq(noteTags.noteId, note.id));
 
-      let noteTagsData = [];
+      let noteTagsData: typeof tags.$inferSelect[] = [];
       if (noteTagRecords.length > 0) {
         const tagIds = noteTagRecords.map((nt) => nt.tagId);
         noteTagsData = await db

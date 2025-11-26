@@ -1,28 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Pin, Trash2, Edit, Link as LinkIcon, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import styles from './simple-links-section.module.css';
+import { Star, Plus, X, Edit, Trash2, Link as LinkIcon, Key } from 'lucide-react';
+import styles from './card.module.css';
+import dialogStyles from './dialog.module.css';
 
 interface Note {
   id: string;
   title: string;
   content: string;
   category: string;
-  isPinned: boolean;
+  isPinned: boolean | null;
   linkedLinkId?: string | null;
   linkedCredentialId?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   tags: Array<{
     id: string;
     name: string;
@@ -33,10 +26,119 @@ interface Note {
 interface Props {
   notes: Note[];
   searchQuery: string;
-  onCreate: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'tags' | 'isPinned'>) => void;
+  onCreate: (note: {
+    title: string;
+    content: string;
+    category: string;
+    linkedLinkId?: string;
+    linkedCredentialId?: string;
+  }) => void;
   onUpdate: (id: string, note: Partial<Note>) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
+}
+
+// Note Card Component
+function NoteCard({
+  note,
+  onTogglePin,
+  onEdit,
+  onDelete,
+}: {
+  note: Note;
+  onTogglePin: (id: string) => void;
+  onEdit: (note: Note) => void;
+  onDelete: (id: string) => void;
+}) {
+  const categoryClass = note.category.toLowerCase();
+
+  return (
+    <div className={`${styles.card} ${styles[`card--${categoryClass}`]}`}>
+      {/* Category Badge & Pin */}
+      <div className={styles.cardHeader}>
+        <span className={`${styles.categoryBadge} ${styles[`categoryBadge--${categoryClass}`]}`}>
+          {note.category}
+        </span>
+        {note.isPinned && (
+          <Star className={styles.pinIcon} />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className={styles.cardContent}>
+        <h4 className={styles.cardTitle}>{note.title}</h4>
+        <p className={styles.cardDescription}>
+          {note.content.slice(0, 150)}{note.content.length > 150 ? '...' : ''}
+        </p>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
+          {note.linkedLinkId && (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)' }} title="Linked to a Link">
+              <LinkIcon style={{ width: '0.875rem', height: '0.875rem', display: 'inline', verticalAlign: 'middle' }} />
+            </span>
+          )}
+          {note.linkedCredentialId && (
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)' }} title="Linked to a Credential">
+              <Key style={{ width: '0.875rem', height: '0.875rem', display: 'inline', verticalAlign: 'middle' }} />
+            </span>
+          )}
+          {note.tags.map((tag) => (
+            <span
+              key={tag.id}
+              style={{
+                fontSize: 'var(--text-xs)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-sm)',
+                backgroundColor: tag.color,
+                color: 'white'
+              }}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginTop: 'var(--space-2)' }}>
+          Updated {new Date(note.updatedAt).toLocaleDateString()}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className={styles.cardActions}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onTogglePin(note.id)}
+          title={note.isPinned ? 'Unpin' : 'Pin'}
+        >
+          <Star style={{
+            width: '1rem',
+            height: '1rem',
+            fill: note.isPinned ? '#facc15' : 'none',
+            color: note.isPinned ? '#facc15' : 'currentColor'
+          }} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(note)}
+          title="Edit"
+        >
+          <Edit style={{ width: '1rem', height: '1rem' }} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            if (confirm('Delete this note?')) {
+              onDelete(note.id);
+            }
+          }}
+          title="Delete"
+        >
+          <Trash2 style={{ width: '1rem', height: '1rem', color: 'var(--color-destructive)' }} />
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function NotesSection({
@@ -47,13 +149,13 @@ export function NotesSection({
   onDelete,
   onTogglePin,
 }: Props) {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-
-  // Form state
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('General');
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    category: 'General',
+  });
 
   // Filter notes
   const filteredNotes = notes.filter((note) =>
@@ -64,95 +166,99 @@ export function NotesSection({
       : true
   );
 
+  const pinnedNotes = filteredNotes.filter(n => n.isPinned).sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+
+  const unpinnedNotes = filteredNotes.filter(n => !n.isPinned).sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !content.trim()) {
-      toast.error('Title and content are required');
+    if (!formData.title.trim() || !formData.content.trim()) {
       return;
     }
 
     if (editingNote) {
-      onUpdate(editingNote.id, { title, content, category });
-      setEditingNote(null);
+      onUpdate(editingNote, formData);
     } else {
-      onCreate({ title, content, category, linkedLinkId: null, linkedCredentialId: null });
+      onCreate({
+        ...formData,
+        linkedLinkId: undefined,
+        linkedCredentialId: undefined,
+      });
     }
 
-    resetForm();
-    setIsCreateDialogOpen(false);
-  };
-
-  const resetForm = () => {
-    setTitle('');
-    setContent('');
-    setCategory('General');
+    handleCancel();
   };
 
   const handleEdit = (note: Note) => {
-    setEditingNote(note);
-    setTitle(note.title);
-    setContent(note.content);
-    setCategory(note.category);
-    setIsCreateDialogOpen(true);
+    setEditingNote(note.id);
+    setFormData({
+      title: note.title,
+      content: note.content,
+      category: note.category,
+    });
+    setShowDialog(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this note?')) {
-      onDelete(id);
-    }
+  const handleCancel = () => {
+    setShowDialog(false);
+    setEditingNote(null);
+    setFormData({ title: '', content: '', category: 'General' });
   };
 
   return (
-    <div className={styles.section}>
-      <div className={styles.header}>
-        <h2 className={styles.sectionTitle}>
-          Notes
-          <span className={styles.count}>{filteredNotes.length}</span>
-        </h2>
+    <div className={dialogStyles.section}>
+      <div className={dialogStyles.sectionHeader}>
+        <h2 className={dialogStyles.sectionTitle}>Notes</h2>
+        <Button size="sm" onClick={() => setShowDialog(true)}>
+          <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
+          Add Note
+        </Button>
+      </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className={styles.icon} />
-              Add Note
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingNote ? 'Edit Note' : 'Create Note'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label htmlFor="title">Title *</label>
+      {/* Add/Edit Note Dialog */}
+      {showDialog && (
+        <div className={dialogStyles.overlay}>
+          <div className={dialogStyles.dialog}>
+            <div className={dialogStyles.dialogHeader}>
+              <h3 className={dialogStyles.dialogTitle}>{editingNote ? 'Edit Note' : 'Add New Note'}</h3>
+              <button onClick={handleCancel} className={dialogStyles.closeButton}>
+                <X style={{ width: '1rem', height: '1rem' }} />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className={dialogStyles.form}>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Title *</label>
                 <input
-                  id="title"
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className={dialogStyles.input}
                   placeholder="Note title"
-                  required
                 />
               </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="content">Content *</label>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Content *</label>
                 <textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Note content (Markdown supported)"
-                  rows={8}
                   required
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={8}
+                  className={`${dialogStyles.input} ${dialogStyles.textarea}`}
+                  placeholder="Note content (Markdown supported)"
                 />
               </div>
-
-              <div className={styles.formGroup}>
-                <label htmlFor="category">Category</label>
+              <div className={dialogStyles.formField}>
+                <label className={dialogStyles.label}>Category</label>
                 <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className={dialogStyles.input}
                 >
                   <option value="General">General</option>
                   <option value="Work">Work</option>
@@ -163,91 +269,57 @@ export function NotesSection({
                   <option value="Documentation">Documentation</option>
                 </select>
               </div>
-
-              <div className={styles.formActions}>
-                <Button type="submit">{editingNote ? 'Update' : 'Create'}</Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreateDialogOpen(false);
-                    setEditingNote(null);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </Button>
+              <div className={dialogStyles.formActions}>
+                <Button type="submit" style={{ flex: 1 }}>{editingNote ? 'Update' : 'Add'} Note</Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
               </div>
             </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+        </div>
+      )}
 
-      <div className={styles.grid}>
-        {filteredNotes.length === 0 ? (
-          <p className={styles.empty}>
+      {/* Pinned Notes */}
+      {pinnedNotes.length > 0 && (
+        <div className={dialogStyles.cardSection}>
+          <h3 className={dialogStyles.subsectionTitle}>
+            <Star className={styles.pinIcon} />
+            Pinned ({pinnedNotes.length})
+          </h3>
+          <div className={dialogStyles.grid}>
+            {pinnedNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onTogglePin={onTogglePin}
+                onEdit={handleEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All Notes */}
+      <div className={dialogStyles.cardSection}>
+        <h3 className={dialogStyles.subsectionTitle}>
+          {pinnedNotes.length > 0 ? 'All Notes' : 'Notes'} ({unpinnedNotes.length})
+        </h3>
+        {unpinnedNotes.length === 0 ? (
+          <p style={{ color: 'var(--color-muted-foreground)', padding: 'var(--space-4)' }}>
             {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
           </p>
         ) : (
-          filteredNotes.map((note) => (
-            <div key={note.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h3 className={styles.cardTitle}>{note.title}</h3>
-                <div className={styles.cardActions}>
-                  <button
-                    onClick={() => onTogglePin(note.id)}
-                    className={note.isPinned ? styles.pinned : ''}
-                    title={note.isPinned ? 'Unpin' : 'Pin'}
-                  >
-                    <Pin />
-                  </button>
-                  <button onClick={() => handleEdit(note)} title="Edit">
-                    <Edit />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(note.id)}
-                    className={styles.deleteBtn}
-                    title="Delete"
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.noteContent}>
-                <p>{note.content.slice(0, 150)}{note.content.length > 150 ? '...' : ''}</p>
-              </div>
-
-              <div className={styles.cardMeta}>
-                <span className={styles.category}>{note.category}</span>
-                {note.linkedLinkId && (
-                  <span className={styles.linkedIcon} title="Linked to a Link">
-                    <LinkIcon size={14} />
-                  </span>
-                )}
-                {note.linkedCredentialId && (
-                  <span className={styles.linkedIcon} title="Linked to a Credential">
-                    <Key size={14} />
-                  </span>
-                )}
-                {note.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={styles.tag}
-                    style={{ backgroundColor: tag.color }}
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-
-              <div className={styles.cardFooter}>
-                <span className={styles.date}>
-                  Updated {new Date(note.updatedAt).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          ))
+          <div className={dialogStyles.grid}>
+            {unpinnedNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onTogglePin={onTogglePin}
+                onEdit={handleEdit}
+                onDelete={onDelete}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
