@@ -91,6 +91,9 @@ function CredentialCard({
       <div className={`${styles.cardContent} ${styles.credentialContent}`}>
         <h4 className={styles.cardTitle}>{credential.name}</h4>
         <p className={styles.passwordDots}>••••••••</p>
+        <p className={styles.cardDate}>
+          {new Date(credential.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+        </p>
       </div>
 
       {/* Actions */}

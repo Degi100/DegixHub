@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Trash2, Plus, X, Edit } from 'lucide-react';
+import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2 } from 'lucide-react';
+import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
@@ -13,6 +14,7 @@ interface Link {
   url: string;
   category: string;
   description?: string | null;
+  favicon?: string | null;
   isPinned?: boolean | null;
   createdAt: string;
 }
@@ -21,8 +23,8 @@ interface SimpleLinksSectionProps {
   links: Link[] | undefined;
   onDeleteLink: (id: string) => void;
   onTogglePin: (id: string) => void;
-  onCreateLink: (data: { name: string; url: string; category: string; description?: string }) => void;
-  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string }) => void;
+  onCreateLink: (data: { name: string; url: string; category: string; description?: string; favicon?: string }) => void;
+  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string; favicon?: string }) => void;
   categories: string[];
   colorMap?: Record<string, string>;
   onAddCategory: (name: string, color?: string) => void;
@@ -81,11 +83,24 @@ function LinkCard({
 
       {/* Content */}
       <div className={`${styles.cardContent} ${styles.linkContent}`}>
-        <h4 className={styles.cardTitle}>{link.name}</h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {link.favicon && (
+            <img
+              src={link.favicon}
+              alt=""
+              style={{ width: '1rem', height: '1rem', borderRadius: '2px', flexShrink: 0 }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <h4 className={styles.cardTitle}>{link.name}</h4>
+        </div>
         {link.description && (
           <p className={styles.cardDescription}>{link.description}</p>
         )}
         <p className={styles.cardUrl}>{link.url}</p>
+        <p className={styles.cardDate}>
+          {new Date(link.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+        </p>
       </div>
 
       {/* Actions */}
@@ -144,7 +159,43 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     url: '',
     category: 'General',
     description: '',
+    favicon: '',
   });
+  const [isFetchingMeta, setIsFetchingMeta] = useState(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch metadata mutation
+  const fetchMetadataMutation = trpc.links.fetchMetadata.useMutation();
+
+  // Auto-fetch metadata when URL changes (with debounce)
+  const handleUrlChange = (url: string) => {
+    setFormData(prev => ({ ...prev, url }));
+
+    // Clear previous timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    // Only fetch if URL looks valid and we're not editing
+    if (!editingLink && url.length > 10 && (url.startsWith('http://') || url.startsWith('https://'))) {
+      fetchTimeoutRef.current = setTimeout(async () => {
+        setIsFetchingMeta(true);
+        try {
+          const metadata = await fetchMetadataMutation.mutateAsync({ url });
+          // Only fill if fields are empty
+          setFormData(prev => ({
+            ...prev,
+            name: prev.name || metadata.title || '',
+            description: prev.description || metadata.description || '',
+            favicon: metadata.favicon || '',
+          }));
+        } catch (e) {
+          // Ignore fetch errors
+        }
+        setIsFetchingMeta(false);
+      }, 800);
+    }
+  };
 
   const pinnedLinks = links?.filter(l => l.isPinned).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -163,7 +214,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
       onCreateLink({ ...formData });
     }
 
-    setFormData({ name: '', url: '', category: 'General', description: '' });
+    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '' });
     setShowDialog(false);
     setEditingLink(null);
   };
@@ -175,6 +226,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
       url: link.url,
       category: link.category,
       description: link.description || '',
+      favicon: link.favicon || '',
     });
     setShowDialog(true);
   };
@@ -182,7 +234,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   const handleCancel = () => {
     setShowDialog(false);
     setEditingLink(null);
-    setFormData({ name: '', url: '', category: 'General', description: '' });
+    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '' });
   };
 
   return (
@@ -218,13 +270,33 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>URL *</label>
-                <input
-                  type="url"
-                  required
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className={dialogStyles.input}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="url"
+                    required
+                    value={formData.url}
+                    onChange={(e) => handleUrlChange(e.target.value)}
+                    className={dialogStyles.input}
+                    placeholder="https://example.com"
+                  />
+                  {isFetchingMeta && (
+                    <Loader2 style={{
+                      position: 'absolute',
+                      right: '0.75rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '1rem',
+                      height: '1rem',
+                      animation: 'spin 1s linear infinite',
+                      color: 'var(--color-muted-foreground)'
+                    }} />
+                  )}
+                </div>
+                {!editingLink && (
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginTop: '4px' }}>
+                    Name & Description werden automatisch gefetcht
+                  </p>
+                )}
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Category</label>

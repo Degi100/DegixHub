@@ -5,6 +5,7 @@ export const LinkCreateSchema = object({
   url: pipe(string(), url('Must be a valid URL')),
   category: pipe(string(), minLength(1, 'Category is required')),
   description: optional(string()),
+  favicon: optional(string()),
   tagIds: optional(array(string())),
 });
 
@@ -14,6 +15,7 @@ export const LinkUpdateSchema = object({
   url: pipe(string(), url('Must be a valid URL')),
   category: pipe(string(), minLength(1, 'Category is required')),
   description: optional(string()),
+  favicon: optional(string()),
   tagIds: optional(array(string())),
 });
 

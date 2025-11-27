@@ -66,6 +66,7 @@ export const linksRouter = router({
         url: input.url,
         category: input.category,
         description: input.description || null,
+        favicon: input.favicon || null,
       });
 
       // Assign tags if provided
@@ -121,6 +122,7 @@ export const linksRouter = router({
           url: input.url,
           category: input.category,
           description: input.description || null,
+          favicon: input.favicon || null,
         })
         .where(eq(links.id, input.id));
 
@@ -191,7 +193,7 @@ export const linksRouter = router({
   // Fetch metadata for a URL
   fetchMetadata: protectedProcedure
     .input((raw) => parse(object({ url: pipe(string(), minLength(1)) }), raw))
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       const metadata = await fetchLinkMetadata(input.url);
       return metadata;
     }),

@@ -254,6 +254,13 @@
   border-radius: var(--radius-sm);
 }
 
+.cardDate {
+  font-size: var(--text-xs);
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
+  margin-top: var(--space-2);
+}
+
 /* Card Actions */
 .cardActions {
   display: flex;
