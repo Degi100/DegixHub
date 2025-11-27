@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const { data: links, refetch: refetchLinks } = trpc.links.getAll.useQuery();
   const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
   const { data: notes, refetch: refetchNotes } = trpc.notes.getAll.useQuery();
+  const { data: categoriesData, refetch: refetchCategories } = trpc.categories.getAll.useQuery();
 
   // Link Mutations
   const createLinkMutation = trpc.links.create.useMutation({
@@ -105,6 +106,14 @@ export default function DashboardPage() {
     onSuccess: () => {
       refetchNotes();
       toast.success('Note deleted');
+    },
+  });
+
+  // Category Mutation
+  const createCategoryMutation = trpc.categories.create.useMutation({
+    onSuccess: () => {
+      refetchCategories();
+      toast.success('Category added');
     },
   });
 
@@ -213,6 +222,10 @@ export default function DashboardPage() {
               onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
               onCreateLink={(data) => createLinkMutation.mutate(data)}
               onUpdateLink={(data) => updateLinkMutation.mutate(data)}
+              categories={categoriesData?.categories || []}
+              onAddCategory={async (name) => {
+                await createCategoryMutation.mutateAsync({ name });
+              }}
             />
           )}
 
@@ -229,6 +242,10 @@ export default function DashboardPage() {
               onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
               onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
               onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+              categories={categoriesData?.categories || []}
+              onAddCategory={async (name) => {
+                await createCategoryMutation.mutateAsync({ name });
+              }}
             />
           )}
 
@@ -248,6 +265,10 @@ export default function DashboardPage() {
               }}
               onDelete={(id) => deleteNoteMutation.mutate({ id })}
               onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
+              categories={categoriesData?.categories || []}
+              onAddCategory={async (name) => {
+                await createCategoryMutation.mutateAsync({ name });
+              }}
             />
           )}
 

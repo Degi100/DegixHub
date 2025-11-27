@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, Plus, X, Edit, Trash2, Link as LinkIcon, Key } from 'lucide-react';
+import { CategorySelect } from './category-select';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -28,6 +29,8 @@ interface Props {
   searchQuery: string;
   links?: Array<{ id: string; name: string; url: string }>;
   credentials?: Array<{ id: string; name: string }>;
+  categories: string[];
+  onAddCategory: (name: string) => void;
   onCreate: (note: {
     title: string;
     content: string;
@@ -178,6 +181,8 @@ export function NotesSection({
   searchQuery,
   links = [],
   credentials = [],
+  categories,
+  onAddCategory,
   onCreate,
   onUpdate,
   onDelete,
@@ -293,19 +298,12 @@ export function NotesSection({
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Category</label>
-                <select
+                <CategorySelect
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className={dialogStyles.input}
-                >
-                  <option value="General">General</option>
-                  <option value="Work">Work</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Ideas">Ideas</option>
-                  <option value="Projects">Projects</option>
-                  <option value="Todo">Todo</option>
-                  <option value="Documentation">Documentation</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  categories={categories}
+                  onAddCategory={onAddCategory}
+                />
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Link to Link (optional)</label>

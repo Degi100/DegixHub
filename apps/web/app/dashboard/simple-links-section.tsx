@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, ExternalLink, Trash2, Plus, X, Edit } from 'lucide-react';
+import { CategorySelect } from './category-select';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -22,6 +23,8 @@ interface SimpleLinksSectionProps {
   onTogglePin: (id: string) => void;
   onCreateLink: (data: { name: string; url: string; category: string; description?: string }) => void;
   onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string }) => void;
+  categories: string[];
+  onAddCategory: (name: string) => void;
 }
 
 // Link Card Component
@@ -107,7 +110,7 @@ function LinkCard({
   );
 }
 
-export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink }: SimpleLinksSectionProps) {
+export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, categories, onAddCategory }: SimpleLinksSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -199,22 +202,12 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Category</label>
-                <select
+                <CategorySelect
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className={dialogStyles.input}
-                >
-                  <option value="General">General</option>
-                  <option value="Work">Work</option>
-                  <option value="Personal">Personal</option>
-                  <option value="Development">Development</option>
-                  <option value="Design">Design</option>
-                  <option value="Documentation">Documentation</option>
-                  <option value="Social">Social</option>
-                  <option value="Entertainment">Entertainment</option>
-                  <option value="Shopping">Shopping</option>
-                  <option value="News">News</option>
-                </select>
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  categories={categories}
+                  onAddCategory={onAddCategory}
+                />
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Description</label>

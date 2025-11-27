@@ -6,6 +6,7 @@ import { tagsRouter } from './routers/tags';
 import { activityLogsRouter } from './routers/activity-logs';
 import { dataExportRouter } from './routers/data-export';
 import { notesRouter } from './routers/notes';
+import { categoriesRouter } from './routers/categories';
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -19,6 +20,7 @@ export const appRouter = router({
   activityLogs: activityLogsRouter,
   dataExport: dataExportRouter,
   notes: notesRouter,
+  categories: categoriesRouter,
 });
 
 export type AppRouter = typeof appRouter;

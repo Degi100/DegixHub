@@ -107,6 +107,18 @@ export const noteTags = sqliteTable('note_tags', {
     .references(() => tags.id, { onDelete: 'cascade' }),
 });
 
+export const categories = sqliteTable('categories', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // 'link', 'credential', 'note', 'all'
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
 export const activityLogs = sqliteTable('activity_logs', {
   id: text('id').primaryKey(),
   userId: text('user_id')

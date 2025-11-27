@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Star, Eye, Copy, Trash2, Plus, Shield, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
+import { CategorySelect } from './category-select';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -21,6 +22,8 @@ interface SimpleCredentialsSectionProps {
   onDeleteCredential: (id: string) => void;
   onTogglePin: (id: string) => void;
   onCreateCredential: (data: { name: string; data: string; category: string }) => void;
+  categories: string[];
+  onAddCategory: (name: string) => void;
 }
 
 // Credential Card Component
@@ -106,6 +109,8 @@ export function SimpleCredentialsSection({
   onDeleteCredential,
   onTogglePin,
   onCreateCredential,
+  categories,
+  onAddCategory,
 }: SimpleCredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
@@ -184,11 +189,11 @@ export function SimpleCredentialsSection({
               </div>
               <div className={dialogStyles.formField}>
                 <label className={dialogStyles.label}>Category</label>
-                <input
-                  type="text"
+                <CategorySelect
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className={dialogStyles.input}
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  categories={categories}
+                  onAddCategory={onAddCategory}
                 />
               </div>
               <div className={dialogStyles.formActions}>
