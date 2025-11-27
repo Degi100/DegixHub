@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, Eye, Copy, Trash2, Plus, Shield, X } from 'lucide-react';
+import { Star, Eye, Copy, Trash2, Plus, Shield, X, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
@@ -22,6 +22,7 @@ interface SimpleCredentialsSectionProps {
   onDeleteCredential: (id: string) => void;
   onTogglePin: (id: string) => void;
   onCreateCredential: (data: { name: string; data: string; category: string }) => void;
+  onUpdateCredential: (data: { id: string; name: string; data: string; category: string }) => void;
   categories: string[];
   onAddCategory: (name: string) => void;
 }
@@ -31,11 +32,13 @@ function CredentialCard({
   credential,
   onTogglePin,
   onView,
+  onEdit,
   onDelete,
 }: {
   credential: Credential;
   onTogglePin: (id: string) => void;
   onView: (id: string) => void;
+  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const categoryClass = credential.category.toLowerCase();
@@ -90,6 +93,14 @@ function CredentialCard({
         <Button
           variant="ghost"
           size="icon"
+          onClick={() => onEdit(credential.id)}
+          title="Edit"
+        >
+          <Edit style={{ width: '1rem', height: '1rem' }} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => {
             if (confirm('Delete this credential?')) {
               onDelete(credential.id);
@@ -109,10 +120,12 @@ export function SimpleCredentialsSection({
   onDeleteCredential,
   onTogglePin,
   onCreateCredential,
+  onUpdateCredential,
   categories,
   onAddCategory,
 }: SimpleCredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -120,10 +133,15 @@ export function SimpleCredentialsSection({
     category: 'General',
   });
 
-  // Fetch credential data when viewing
+  // Fetch credential data when viewing or editing
   const { data: viewedCredential } = trpc.credentials.getById.useQuery(
     { id: viewingId! },
     { enabled: !!viewingId }
+  );
+
+  const { data: editingCredential } = trpc.credentials.getById.useQuery(
+    { id: editingId! },
+    { enabled: !!editingId }
   );
 
   const copyToClipboard = (text: string) => {
@@ -141,9 +159,34 @@ export function SimpleCredentialsSection({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreateCredential(formData);
+    if (editingId) {
+      onUpdateCredential({ id: editingId, ...formData });
+      setEditingId(null);
+    } else {
+      onCreateCredential(formData);
+    }
     setFormData({ name: '', data: '', category: 'General' });
     setShowDialog(false);
+  };
+
+  const handleEdit = (id: string) => {
+    setEditingId(id);
+  };
+
+  // Populate form when editing credential is loaded
+  if (editingCredential && editingId && !showDialog) {
+    setFormData({
+      name: editingCredential.name,
+      data: editingCredential.data,
+      category: editingCredential.category,
+    });
+    setShowDialog(true);
+  }
+
+  const handleCancel = () => {
+    setShowDialog(false);
+    setEditingId(null);
+    setFormData({ name: '', data: '', category: 'General' });
   };
 
   return (
@@ -156,13 +199,13 @@ export function SimpleCredentialsSection({
         </Button>
       </div>
 
-      {/* Add Credential Dialog */}
+      {/* Add/Edit Credential Dialog */}
       {showDialog && (
         <div className={dialogStyles.overlay}>
           <div className={dialogStyles.dialog}>
             <div className={dialogStyles.dialogHeader}>
-              <h3 className={dialogStyles.dialogTitle}>Add New Credential</h3>
-              <button onClick={() => setShowDialog(false)} className={dialogStyles.closeButton}>
+              <h3 className={dialogStyles.dialogTitle}>{editingId ? 'Edit Credential' : 'Add New Credential'}</h3>
+              <button onClick={handleCancel} className={dialogStyles.closeButton}>
                 <X style={{ width: '1rem', height: '1rem' }} />
               </button>
             </div>
@@ -185,6 +228,7 @@ export function SimpleCredentialsSection({
                   value={formData.data}
                   onChange={(e) => setFormData({ ...formData, data: e.target.value })}
                   className={dialogStyles.input}
+                  placeholder={editingId ? 'Enter new password or leave current' : ''}
                 />
               </div>
               <div className={dialogStyles.formField}>
@@ -197,8 +241,8 @@ export function SimpleCredentialsSection({
                 />
               </div>
               <div className={dialogStyles.formActions}>
-                <Button type="submit" style={{ flex: 1 }}>Add Credential</Button>
-                <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+                <Button type="submit" style={{ flex: 1 }}>{editingId ? 'Update' : 'Add'} Credential</Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
               </div>
             </form>
           </div>
@@ -219,6 +263,7 @@ export function SimpleCredentialsSection({
                 credential={cred}
                 onTogglePin={onTogglePin}
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
+                onEdit={handleEdit}
                 onDelete={onDeleteCredential}
               />
             ))}
@@ -241,6 +286,7 @@ export function SimpleCredentialsSection({
                 credential={cred}
                 onTogglePin={onTogglePin}
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
+                onEdit={handleEdit}
                 onDelete={onDeleteCredential}
               />
             ))}

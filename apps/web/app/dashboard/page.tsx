@@ -66,6 +66,13 @@ export default function DashboardPage() {
     },
   });
 
+  const updateCredentialMutation = trpc.credentials.update.useMutation({
+    onSuccess: () => {
+      refetchCredentials();
+      toast.success('Credential updated');
+    },
+  });
+
   const toggleCredentialPinMutation = trpc.credentials.togglePin.useMutation({
     onSuccess: () => {
       refetchCredentials();
@@ -242,6 +249,7 @@ export default function DashboardPage() {
               onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
               onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
               onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+              onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
               categories={categoriesData?.categories || []}
               onAddCategory={async (name) => {
                 await createCategoryMutation.mutateAsync({ name });
