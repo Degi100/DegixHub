@@ -22,6 +22,13 @@
       "when": 1764108822363,
       "tag": "0002_add_categories",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1764109822363,
+      "tag": "0003_add_category_color",
+      "breakpoints": true
     }
   ]
 }

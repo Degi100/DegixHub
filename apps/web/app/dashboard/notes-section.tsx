@@ -30,7 +30,8 @@ interface Props {
   links?: Array<{ id: string; name: string; url: string }>;
   credentials?: Array<{ id: string; name: string }>;
   categories: string[];
-  onAddCategory: (name: string) => void;
+  colorMap?: Record<string, string>;
+  onAddCategory: (name: string, color?: string) => void;
   onCreate: (note: {
     title: string;
     content: string;
@@ -51,6 +52,7 @@ function NoteCard({
   onDelete,
   links,
   credentials,
+  categoryColor,
 }: {
   note: Note;
   onTogglePin: (id: string) => void;
@@ -58,16 +60,40 @@ function NoteCard({
   onDelete: (id: string) => void;
   links: Array<{ id: string; name: string; url: string }>;
   credentials: Array<{ id: string; name: string }>;
+  categoryColor?: string;
 }) {
   const linkedLink = links.find(l => l.id === note.linkedLinkId);
   const linkedCredential = credentials.find(c => c.id === note.linkedCredentialId);
   const categoryClass = note.category.toLowerCase();
+  const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
 
   return (
-    <div className={`${styles.card} ${styles[`card--${categoryClass}`]}`}>
+    <div
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      style={hasCustomColor ? {
+        '--custom-category-color': categoryColor,
+      } as React.CSSProperties : undefined}
+      onMouseEnter={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = '';
+        }
+      }}
+    >
       {/* Category Badge & Pin */}
       <div className={styles.cardHeader}>
-        <span className={`${styles.categoryBadge} ${styles[`categoryBadge--${categoryClass}`]}`}>
+        <span
+          className={`${styles.categoryBadge} ${!hasCustomColor ? styles[`categoryBadge--${categoryClass}`] : ''}`}
+          style={hasCustomColor ? {
+            backgroundColor: `${categoryColor}20`,
+            color: categoryColor,
+            borderColor: `${categoryColor}40`,
+          } : undefined}
+        >
           {note.category}
         </span>
         {note.isPinned && (
@@ -182,6 +208,7 @@ export function NotesSection({
   links = [],
   credentials = [],
   categories,
+  colorMap = {},
   onAddCategory,
   onCreate,
   onUpdate,
@@ -361,6 +388,7 @@ export function NotesSection({
                 onDelete={onDelete}
                 links={links}
                 credentials={credentials}
+                categoryColor={colorMap[note.category]}
               />
             ))}
           </div>
@@ -387,6 +415,7 @@ export function NotesSection({
                 onDelete={onDelete}
                 links={links}
                 credentials={credentials}
+                categoryColor={colorMap[note.category]}
               />
             ))}
           </div>

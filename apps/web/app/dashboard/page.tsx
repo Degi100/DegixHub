@@ -230,8 +230,9 @@ export default function DashboardPage() {
               onCreateLink={(data) => createLinkMutation.mutate(data)}
               onUpdateLink={(data) => updateLinkMutation.mutate(data)}
               categories={categoriesData?.categories || []}
-              onAddCategory={async (name) => {
-                await createCategoryMutation.mutateAsync({ name });
+              colorMap={categoriesData?.colorMap || {}}
+              onAddCategory={async (name, color) => {
+                await createCategoryMutation.mutateAsync({ name, color });
               }}
             />
           )}
@@ -251,8 +252,9 @@ export default function DashboardPage() {
               onCreateCredential={(data) => createCredentialMutation.mutate(data)}
               onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
               categories={categoriesData?.categories || []}
-              onAddCategory={async (name) => {
-                await createCategoryMutation.mutateAsync({ name });
+              colorMap={categoriesData?.colorMap || {}}
+              onAddCategory={async (name, color) => {
+                await createCategoryMutation.mutateAsync({ name, color });
               }}
             />
           )}
@@ -274,8 +276,9 @@ export default function DashboardPage() {
               onDelete={(id) => deleteNoteMutation.mutate({ id })}
               onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
               categories={categoriesData?.categories || []}
-              onAddCategory={async (name) => {
-                await createCategoryMutation.mutateAsync({ name });
+              colorMap={categoriesData?.colorMap || {}}
+              onAddCategory={async (name, color) => {
+                await createCategoryMutation.mutateAsync({ name, color });
               }}
             />
           )}

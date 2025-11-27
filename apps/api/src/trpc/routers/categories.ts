@@ -5,21 +5,21 @@ import { db } from '../../db';
 import { categories } from '../../db/schema';
 import { router, protectedProcedure } from '../index';
 
-// Default categories that are always available
-const DEFAULT_CATEGORIES = [
-  'General',
-  'Work',
-  'Personal',
-  'Development',
-  'Design',
-  'Documentation',
-  'Social',
-  'Entertainment',
-  'Shopping',
-  'News',
-  'Ideas',
-  'Projects',
-  'Todo',
+// Default categories with their colors
+const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
+  { name: 'General', color: '#6b7280' },
+  { name: 'Work', color: '#3b82f6' },
+  { name: 'Personal', color: '#8b5cf6' },
+  { name: 'Development', color: '#10b981' },
+  { name: 'Design', color: '#f59e0b' },
+  { name: 'Documentation', color: '#6366f1' },
+  { name: 'Social', color: '#ec4899' },
+  { name: 'Entertainment', color: '#f97316' },
+  { name: 'Shopping', color: '#14b8a6' },
+  { name: 'News', color: '#ef4444' },
+  { name: 'Ideas', color: '#a855f7' },
+  { name: 'Projects', color: '#0ea5e9' },
+  { name: 'Todo', color: '#84cc16' },
 ];
 
 export const categoriesRouter = router({
@@ -32,15 +32,26 @@ export const categoriesRouter = router({
       .from(categories)
       .where(eq(categories.userId, userId));
 
-    // Combine default categories with user-created ones
-    const customCategoryNames = userCategories.map((c) => c.name);
-    const allCategoryNames = [
-      ...DEFAULT_CATEGORIES,
-      ...customCategoryNames.filter((name) => !DEFAULT_CATEGORIES.includes(name)),
-    ];
+    // Build category list with colors
+    const defaultCategoryNames = DEFAULT_CATEGORIES.map((c) => c.name);
+    const customCategoryNames = userCategories
+      .filter((c) => !defaultCategoryNames.includes(c.name))
+      .map((c) => c.name);
+
+    // Create color map: default colors + custom category colors
+    const colorMap: Record<string, string> = {};
+    DEFAULT_CATEGORIES.forEach((c) => {
+      colorMap[c.name] = c.color;
+    });
+    userCategories.forEach((c) => {
+      colorMap[c.name] = c.color;
+    });
+
+    const allCategoryNames = [...defaultCategoryNames, ...customCategoryNames].sort();
 
     return {
-      categories: allCategoryNames.sort(),
+      categories: allCategoryNames,
+      colorMap,
       customCategories: userCategories,
     };
   }),
@@ -51,6 +62,7 @@ export const categoriesRouter = router({
       parse(
         object({
           name: string(),
+          color: optional(string()),
           type: optional(string()), // 'link', 'credential', 'note', 'all'
         }),
         input
@@ -70,8 +82,9 @@ export const categoriesRouter = router({
       }
 
       // Check if it's a default category
-      if (DEFAULT_CATEGORIES.includes(input.name)) {
-        return { id: 'default', name: input.name, type: 'all', userId, createdAt: new Date() };
+      const defaultCat = DEFAULT_CATEGORIES.find((c) => c.name === input.name);
+      if (defaultCat) {
+        return { id: 'default', name: input.name, color: defaultCat.color, type: 'all', userId, createdAt: new Date() };
       }
 
       const id = generateId(15);
@@ -79,6 +92,7 @@ export const categoriesRouter = router({
         id,
         userId,
         name: input.name,
+        color: input.color || '#6b7280',
         type: input.type || 'all',
         createdAt: new Date(),
       };

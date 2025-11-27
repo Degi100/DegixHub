@@ -24,7 +24,8 @@ interface SimpleLinksSectionProps {
   onCreateLink: (data: { name: string; url: string; category: string; description?: string }) => void;
   onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string }) => void;
   categories: string[];
-  onAddCategory: (name: string) => void;
+  colorMap?: Record<string, string>;
+  onAddCategory: (name: string, color?: string) => void;
 }
 
 // Link Card Component
@@ -33,19 +34,44 @@ function LinkCard({
   onTogglePin,
   onEdit,
   onDelete,
+  categoryColor,
 }: {
   link: Link;
   onTogglePin: (id: string) => void;
   onEdit: (link: Link) => void;
   onDelete: (id: string) => void;
+  categoryColor?: string;
 }) {
   const categoryClass = link.category.toLowerCase();
+  const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
 
   return (
-    <div className={`${styles.card} ${styles[`card--${categoryClass}`]}`}>
+    <div
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      style={hasCustomColor ? {
+        '--custom-category-color': categoryColor,
+      } as React.CSSProperties : undefined}
+      onMouseEnter={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = '';
+        }
+      }}
+    >
       {/* Category Badge & Pin */}
       <div className={styles.cardHeader}>
-        <span className={`${styles.categoryBadge} ${styles[`categoryBadge--${categoryClass}`]}`}>
+        <span
+          className={`${styles.categoryBadge} ${!hasCustomColor ? styles[`categoryBadge--${categoryClass}`] : ''}`}
+          style={hasCustomColor ? {
+            backgroundColor: `${categoryColor}20`,
+            color: categoryColor,
+            borderColor: `${categoryColor}40`,
+          } : undefined}
+        >
           {link.category}
         </span>
         {link.isPinned && (
@@ -110,7 +136,7 @@ function LinkCard({
   );
 }
 
-export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, categories, onAddCategory }: SimpleLinksSectionProps) {
+export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, categories, colorMap = {}, onAddCategory }: SimpleLinksSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -242,6 +268,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDeleteLink}
+                categoryColor={colorMap[link.category]}
               />
             ))}
           </div>
@@ -264,6 +291,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDeleteLink}
+                categoryColor={colorMap[link.category]}
               />
             ))}
           </div>

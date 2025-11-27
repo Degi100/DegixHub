@@ -113,6 +113,7 @@ export const categories = sqliteTable('categories', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  color: text('color').notNull().default('#6b7280'), // hex color for custom categories
   type: text('type').notNull(), // 'link', 'credential', 'note', 'all'
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())

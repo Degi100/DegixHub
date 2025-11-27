@@ -24,7 +24,8 @@ interface SimpleCredentialsSectionProps {
   onCreateCredential: (data: { name: string; data: string; category: string }) => void;
   onUpdateCredential: (data: { id: string; name: string; data: string; category: string }) => void;
   categories: string[];
-  onAddCategory: (name: string) => void;
+  colorMap?: Record<string, string>;
+  onAddCategory: (name: string, color?: string) => void;
 }
 
 // Credential Card Component
@@ -34,20 +35,45 @@ function CredentialCard({
   onView,
   onEdit,
   onDelete,
+  categoryColor,
 }: {
   credential: Credential;
   onTogglePin: (id: string) => void;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  categoryColor?: string;
 }) {
   const categoryClass = credential.category.toLowerCase();
+  const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
 
   return (
-    <div className={`${styles.card} ${styles[`card--${categoryClass}`]}`}>
+    <div
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      style={hasCustomColor ? {
+        '--custom-category-color': categoryColor,
+      } as React.CSSProperties : undefined}
+      onMouseEnter={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (hasCustomColor) {
+          (e.currentTarget as HTMLElement).style.borderColor = '';
+        }
+      }}
+    >
       {/* Category Badge & Pin */}
       <div className={styles.cardHeader}>
-        <span className={`${styles.categoryBadge} ${styles[`categoryBadge--${categoryClass}`]}`}>
+        <span
+          className={`${styles.categoryBadge} ${!hasCustomColor ? styles[`categoryBadge--${categoryClass}`] : ''}`}
+          style={hasCustomColor ? {
+            backgroundColor: `${categoryColor}20`,
+            color: categoryColor,
+            borderColor: `${categoryColor}40`,
+          } : undefined}
+        >
           {credential.category}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -122,6 +148,7 @@ export function SimpleCredentialsSection({
   onCreateCredential,
   onUpdateCredential,
   categories,
+  colorMap = {},
   onAddCategory,
 }: SimpleCredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
@@ -265,6 +292,7 @@ export function SimpleCredentialsSection({
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
                 onEdit={handleEdit}
                 onDelete={onDeleteCredential}
+                categoryColor={colorMap[cred.category]}
               />
             ))}
           </div>
@@ -288,6 +316,7 @@ export function SimpleCredentialsSection({
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
                 onEdit={handleEdit}
                 onDelete={onDeleteCredential}
+                categoryColor={colorMap[cred.category]}
               />
             ))}
           </div>
