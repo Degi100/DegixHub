@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
+import { PinModal } from './pin-modal';
+import { usePinContext } from './pin-context';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -297,6 +299,12 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   const [copyingCredentialId, setCopyingCredentialId] = useState<string | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // PIN protection
+  const { hasPin, checkPinRequired, unlock, refetchHasPin } = usePinContext();
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinModalMode, setPinModalMode] = useState<'setup' | 'verify'>('verify');
+  const [pendingCredentialCopy, setPendingCredentialCopy] = useState<string | null>(null);
+
   // Fetch metadata mutation
   const fetchMetadataMutation = trpc.links.fetchMetadata.useMutation();
 
@@ -312,6 +320,40 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     import('sonner').then(({ toast }) => toast.success('Credential copied!'));
     setCopyingCredentialId(null);
   }
+
+  // PIN-protected credential copy handler
+  const handleCopyCredential = (credentialId: string) => {
+    // If no PIN is set, show setup modal
+    if (hasPin === false) {
+      setPinModalMode('setup');
+      setPendingCredentialCopy(credentialId);
+      setShowPinModal(true);
+      return;
+    }
+
+    // If PIN is required (set but not unlocked), show verify modal
+    if (checkPinRequired()) {
+      setPinModalMode('verify');
+      setPendingCredentialCopy(credentialId);
+      setShowPinModal(true);
+      return;
+    }
+
+    // PIN unlocked, copy credential
+    setCopyingCredentialId(credentialId);
+  };
+
+  const handlePinSuccess = (rememberSession: boolean) => {
+    setShowPinModal(false);
+    unlock(rememberSession);
+    refetchHasPin();
+
+    // Execute pending credential copy
+    if (pendingCredentialCopy) {
+      setCopyingCredentialId(pendingCredentialCopy);
+      setPendingCredentialCopy(null);
+    }
+  };
 
   // Helper to get credential name by ID
   const getCredentialName = (credentialId: string | null | undefined) => {
@@ -513,7 +555,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 notesCount={notesCountByLinkId[link.id] || 0}
                 linkedNotes={notesByLinkId[link.id] || []}
                 linkedCredentialName={getCredentialName(link.linkedCredentialId)}
-                onCopyCredential={setCopyingCredentialId}
+                onCopyCredential={handleCopyCredential}
               />
             ))}
           </div>
@@ -541,7 +583,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 notesCount={notesCountByLinkId[link.id] || 0}
                 linkedNotes={notesByLinkId[link.id] || []}
                 linkedCredentialName={getCredentialName(link.linkedCredentialId)}
-                onCopyCredential={setCopyingCredentialId}
+                onCopyCredential={handleCopyCredential}
               />
             ))}
           </div>
@@ -564,6 +606,17 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
           </Button>
         </div>
       )}
+
+      {/* PIN Modal */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPendingCredentialCopy(null);
+        }}
+        onSuccess={handlePinSuccess}
+        mode={pinModalMode}
+      />
     </div>
   );
 }

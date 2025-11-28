@@ -10,12 +10,13 @@ import {
   Database,
   X,
   FileText,
+  Settings,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import styles from './sidebar.module.css';
 
 interface SidebarProps {
-  onNavigate: (section: 'links' | 'credentials' | 'notes' | 'activity' | 'data-management') => void;
+  onNavigate: (section: 'links' | 'credentials' | 'notes' | 'activity' | 'data-management' | 'settings') => void;
   activeSection: string;
   onLogout: () => void;
   stats: {
@@ -38,6 +39,7 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, on
     { id: 'notes', label: 'Notes', icon: FileText, count: stats.notesCount },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'data-management', label: 'Data', icon: Database },
+    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const handleNavigate = (section: any) => {

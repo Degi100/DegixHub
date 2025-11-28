@@ -5,6 +5,7 @@ export const users = sqliteTable('users', {
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   recoveryKey: text('recovery_key').notNull(), // Base64-encoded 256-bit recovery key
+  securityPinHash: text('security_pin_hash'), // Hashed 4-digit PIN for credential access
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),

@@ -6,6 +6,8 @@ import { Star, Eye, Copy, Trash2, Plus, Shield, X, Edit, StickyNote, ChevronDown
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
+import { PinModal } from './pin-modal';
+import { usePinContext } from './pin-context';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -252,6 +254,12 @@ export function SimpleCredentialsSection({
     category: 'General',
   });
 
+  // PIN protection
+  const { hasPin, checkPinRequired, unlock, refetchHasPin } = usePinContext();
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinModalMode, setPinModalMode] = useState<'setup' | 'verify'>('verify');
+  const [pendingAction, setPendingAction] = useState<{ type: 'view' | 'edit' | 'copy'; id: string } | null>(null);
+
   // Fetch credential data when viewing or editing
   const { data: viewedCredential } = trpc.credentials.getById.useQuery(
     { id: viewingId! },
@@ -266,6 +274,49 @@ export function SimpleCredentialsSection({
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Copied to clipboard');
+  };
+
+  // PIN-protected action handler
+  const handleProtectedAction = (type: 'view' | 'edit' | 'copy', id: string) => {
+    // If no PIN is set, show setup modal
+    if (hasPin === false) {
+      setPinModalMode('setup');
+      setPendingAction({ type, id });
+      setShowPinModal(true);
+      return;
+    }
+
+    // If PIN is required (set but not unlocked), show verify modal
+    if (checkPinRequired()) {
+      setPinModalMode('verify');
+      setPendingAction({ type, id });
+      setShowPinModal(true);
+      return;
+    }
+
+    // PIN unlocked or no PIN needed, execute action
+    executeAction(type, id);
+  };
+
+  const executeAction = (type: 'view' | 'edit' | 'copy', id: string) => {
+    if (type === 'view') {
+      setViewingId(id);
+    } else if (type === 'edit') {
+      setEditingId(id);
+    }
+    // Copy is handled separately after fetching
+  };
+
+  const handlePinSuccess = (rememberSession: boolean) => {
+    setShowPinModal(false);
+    unlock(rememberSession);
+    refetchHasPin();
+
+    // Execute pending action
+    if (pendingAction) {
+      executeAction(pendingAction.type, pendingAction.id);
+      setPendingAction(null);
+    }
   };
 
   const pinnedCredentials = credentials?.filter(c => c.isPinned).sort((a, b) =>
@@ -381,8 +432,8 @@ export function SimpleCredentialsSection({
                 key={cred.id}
                 credential={cred}
                 onTogglePin={onTogglePin}
-                onView={(id) => setViewingId(viewingId === id ? null : id)}
-                onEdit={handleEdit}
+                onView={(id) => handleProtectedAction('view', id)}
+                onEdit={(id) => handleProtectedAction('edit', id)}
                 onDelete={onDeleteCredential}
                 onAddNote={onAddNote}
                 categoryColor={colorMap[cred.category]}
@@ -408,8 +459,8 @@ export function SimpleCredentialsSection({
                 key={cred.id}
                 credential={cred}
                 onTogglePin={onTogglePin}
-                onView={(id) => setViewingId(viewingId === id ? null : id)}
-                onEdit={handleEdit}
+                onView={(id) => handleProtectedAction('view', id)}
+                onEdit={(id) => handleProtectedAction('edit', id)}
                 onDelete={onDeleteCredential}
                 onAddNote={onAddNote}
                 categoryColor={colorMap[cred.category]}
@@ -483,6 +534,17 @@ export function SimpleCredentialsSection({
           </div>
         </div>
       )}
+
+      {/* PIN Modal */}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPendingAction(null);
+        }}
+        onSuccess={handlePinSuccess}
+        mode={pinModalMode}
+      />
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { SimpleCredentialsSection } from './simple-credentials-section';
 import { NotesSection } from './notes-section';
 import { ActivityLog } from './activity-log';
 import { DataManagement } from './data-management';
+import { SettingsSection } from './settings-section';
+import { PinProvider } from './pin-context';
 import { toast } from 'sonner';
 import styles from './page.module.css';
 
@@ -211,162 +213,168 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className={styles.dashboard}>
-      {/* Sidebar */}
-      <Sidebar
-        activeSection={activeSection}
-        onNavigate={setActiveSection}
-        onLogout={() => logoutMutation.mutate()}
-        stats={stats}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+    <PinProvider>
+      <div className={styles.dashboard}>
+        {/* Sidebar */}
+        <Sidebar
+          activeSection={activeSection}
+          onNavigate={setActiveSection}
+          onLogout={() => logoutMutation.mutate()}
+          stats={stats}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-      {/* Main Content */}
-      <main className={styles.main}>
-        {/* Header with Search */}
-        <div className={styles.searchHeader}>
-          {/* Burger Menu Button (Mobile only) */}
-          <button
-            className={styles.burgerButton}
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open menu"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+        {/* Main Content */}
+        <main className={styles.main}>
+          {/* Header with Search */}
+          <div className={styles.searchHeader}>
+            {/* Burger Menu Button (Mobile only) */}
+            <button
+              className={styles.burgerButton}
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-          <input
-            type="text"
-            placeholder="Search credentials and links..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-        </div>
-
-        <div className={styles.content}>
-          {/* Content Sections */}
-          {activeSection === 'links' && (
-            <SimpleLinksSection
-              links={links?.filter((link) => {
-                if (!searchQuery) return true;
-                const query = searchQuery.toLowerCase();
-                return (
-                  link.name.toLowerCase().includes(query) ||
-                  link.url.toLowerCase().includes(query) ||
-                  link.category.toLowerCase().includes(query)
-                );
-              })}
-              onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
-              onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
-              onCreateLink={(data) => createLinkMutation.mutate(data)}
-              onUpdateLink={(data) => updateLinkMutation.mutate(data)}
-              categories={categoriesData?.categories || []}
-              colorMap={categoriesData?.colorMap || {}}
-              onAddCategory={async (name, color) => {
-                await createCategoryMutation.mutateAsync({ name, color });
-              }}
-              onAddNote={handleAddNoteFromLink}
-              notesCountByLinkId={notesCountByLinkId}
-              notesByLinkId={notesByLinkId}
-              credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
+            <input
+              type="text"
+              placeholder="Search credentials and links..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={styles.searchInput}
             />
-          )}
+          </div>
 
-          {activeSection === 'credentials' && (
-            <SimpleCredentialsSection
-              credentials={credentials?.filter((cred) => {
-                if (!searchQuery) return true;
-                const query = searchQuery.toLowerCase();
-                return (
-                  cred.name.toLowerCase().includes(query) ||
-                  cred.category.toLowerCase().includes(query)
-                );
-              })}
-              onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
-              onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
-              onCreateCredential={(data) => createCredentialMutation.mutate(data)}
-              onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
-              categories={categoriesData?.categories || []}
-              colorMap={categoriesData?.colorMap || {}}
-              onAddCategory={async (name, color) => {
-                await createCategoryMutation.mutateAsync({ name, color });
-              }}
-              onAddNote={handleAddNoteFromCredential}
-              notesCountByCredentialId={notesCountByCredentialId}
-              notesByCredentialId={notesByCredentialId}
-            />
-          )}
+          <div className={styles.content}>
+            {/* Content Sections */}
+            {activeSection === 'links' && (
+              <SimpleLinksSection
+                links={links?.filter((link) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    link.name.toLowerCase().includes(query) ||
+                    link.url.toLowerCase().includes(query) ||
+                    link.category.toLowerCase().includes(query)
+                  );
+                })}
+                onDeleteLink={(id) => deleteLinkMutation.mutate({ id })}
+                onTogglePin={(id) => toggleLinkPinMutation.mutate({ id })}
+                onCreateLink={(data) => createLinkMutation.mutate(data)}
+                onUpdateLink={(data) => updateLinkMutation.mutate(data)}
+                categories={categoriesData?.categories || []}
+                colorMap={categoriesData?.colorMap || {}}
+                onAddCategory={async (name, color) => {
+                  await createCategoryMutation.mutateAsync({ name, color });
+                }}
+                onAddNote={handleAddNoteFromLink}
+                notesCountByLinkId={notesCountByLinkId}
+                notesByLinkId={notesByLinkId}
+                credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
+              />
+            )}
 
-          {activeSection === 'notes' && (
-            <NotesSection
-              notes={notes || []}
-              searchQuery={searchQuery}
-              links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
-              credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
-              onCreate={(data) => {
-                createNoteMutation.mutate(data);
-                setPendingNoteLink(null);
-                setPendingNoteCredential(null);
-              }}
-              onUpdate={(id, data) => {
-                const cleanData: any = { ...data };
-                if (cleanData.isPinned === null) cleanData.isPinned = undefined;
-                if (cleanData.linkedLinkId === null) cleanData.linkedLinkId = undefined;
-                if (cleanData.linkedCredentialId === null) cleanData.linkedCredentialId = undefined;
-                updateNoteMutation.mutate({ id, ...cleanData });
-              }}
-              onDelete={(id) => deleteNoteMutation.mutate({ id })}
-              onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
-              categories={categoriesData?.categories || []}
-              colorMap={categoriesData?.colorMap || {}}
-              onAddCategory={async (name, color) => {
-                await createCategoryMutation.mutateAsync({ name, color });
-              }}
-              pendingLinkId={pendingNoteLink}
-              pendingCredentialId={pendingNoteCredential}
-              onClearPending={() => {
-                setPendingNoteLink(null);
-                setPendingNoteCredential(null);
-              }}
-            />
-          )}
+            {activeSection === 'credentials' && (
+              <SimpleCredentialsSection
+                credentials={credentials?.filter((cred) => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  return (
+                    cred.name.toLowerCase().includes(query) ||
+                    cred.category.toLowerCase().includes(query)
+                  );
+                })}
+                onDeleteCredential={(id) => deleteCredentialMutation.mutate({ id })}
+                onTogglePin={(id) => toggleCredentialPinMutation.mutate({ id })}
+                onCreateCredential={(data) => createCredentialMutation.mutate(data)}
+                onUpdateCredential={(data) => updateCredentialMutation.mutate(data)}
+                categories={categoriesData?.categories || []}
+                colorMap={categoriesData?.colorMap || {}}
+                onAddCategory={async (name, color) => {
+                  await createCategoryMutation.mutateAsync({ name, color });
+                }}
+                onAddNote={handleAddNoteFromCredential}
+                notesCountByCredentialId={notesCountByCredentialId}
+                notesByCredentialId={notesByCredentialId}
+              />
+            )}
 
-          {activeSection === 'tags' && (
-            <div style={{
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border)',
-              backgroundColor: 'var(--color-card)',
-              padding: 'var(--space-6)',
-              boxShadow: 'var(--shadow-sm)'
-            }}>
-              <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Tags</h2>
-              <p style={{ color: 'var(--color-muted-foreground)' }}>Tags management coming soon...</p>
-            </div>
-          )}
+            {activeSection === 'notes' && (
+              <NotesSection
+                notes={notes || []}
+                searchQuery={searchQuery}
+                links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
+                credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
+                onCreate={(data) => {
+                  createNoteMutation.mutate(data);
+                  setPendingNoteLink(null);
+                  setPendingNoteCredential(null);
+                }}
+                onUpdate={(id, data) => {
+                  const cleanData: any = { ...data };
+                  if (cleanData.isPinned === null) cleanData.isPinned = undefined;
+                  if (cleanData.linkedLinkId === null) cleanData.linkedLinkId = undefined;
+                  if (cleanData.linkedCredentialId === null) cleanData.linkedCredentialId = undefined;
+                  updateNoteMutation.mutate({ id, ...cleanData });
+                }}
+                onDelete={(id) => deleteNoteMutation.mutate({ id })}
+                onTogglePin={(id) => toggleNotePinMutation.mutate({ id })}
+                categories={categoriesData?.categories || []}
+                colorMap={categoriesData?.colorMap || {}}
+                onAddCategory={async (name, color) => {
+                  await createCategoryMutation.mutateAsync({ name, color });
+                }}
+                pendingLinkId={pendingNoteLink}
+                pendingCredentialId={pendingNoteCredential}
+                onClearPending={() => {
+                  setPendingNoteLink(null);
+                  setPendingNoteCredential(null);
+                }}
+              />
+            )}
 
-          {activeSection === 'activity' && (
-            <ActivityLog
-              limit={50}
-              onNavigateToSection={setActiveSection}
-            />
-          )}
+            {activeSection === 'tags' && (
+              <div style={{
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-card)',
+                padding: 'var(--space-6)',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Tags</h2>
+                <p style={{ color: 'var(--color-muted-foreground)' }}>Tags management coming soon...</p>
+              </div>
+            )}
 
-          {activeSection === 'data-management' && (
-            <DataManagement />
-          )}
-        </div>
-      </main>
+            {activeSection === 'activity' && (
+              <ActivityLog
+                limit={50}
+                onNavigateToSection={setActiveSection}
+              />
+            )}
 
-      {/* Command Palette */}
-      <CommandPalette
-        isOpen={showCommandPalette}
-        onClose={() => setShowCommandPalette(false)}
-        links={links || []}
-        credentials={credentials || []}
-      />
-    </div>
+            {activeSection === 'data-management' && (
+              <DataManagement />
+            )}
+
+            {activeSection === 'settings' && (
+              <SettingsSection />
+            )}
+          </div>
+        </main>
+
+        {/* Command Palette */}
+        <CommandPalette
+          isOpen={showCommandPalette}
+          onClose={() => setShowCommandPalette(false)}
+          links={links || []}
+          credentials={credentials || []}
+        />
+      </div>
+    </PinProvider>
   );
 }
