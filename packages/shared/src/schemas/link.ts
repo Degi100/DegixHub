@@ -7,6 +7,7 @@ export const LinkCreateSchema = object({
   description: optional(string()),
   favicon: optional(string()),
   tagIds: optional(array(string())),
+  linkedCredentialId: optional(string()),
 });
 
 export const LinkUpdateSchema = object({
@@ -17,6 +18,7 @@ export const LinkUpdateSchema = object({
   description: optional(string()),
   favicon: optional(string()),
   tagIds: optional(array(string())),
+  linkedCredentialId: optional(string()),
 });
 
 export const LinkDeleteSchema = object({

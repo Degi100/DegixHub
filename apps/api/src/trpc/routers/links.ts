@@ -67,6 +67,7 @@ export const linksRouter = router({
         category: input.category,
         description: input.description || null,
         favicon: input.favicon || null,
+        linkedCredentialId: input.linkedCredentialId || null,
       });
 
       // Assign tags if provided
@@ -123,6 +124,7 @@ export const linksRouter = router({
           category: input.category,
           description: input.description || null,
           favicon: input.favicon || null,
+          linkedCredentialId: input.linkedCredentialId || null,
         })
         .where(eq(links.id, input.id));
 

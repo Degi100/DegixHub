@@ -42,6 +42,9 @@ interface Props {
   onUpdate: (id: string, note: Partial<Note>) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
+  pendingLinkId?: string | null;
+  pendingCredentialId?: string | null;
+  onClearPending?: () => void;
 }
 
 // Note Card Component
@@ -214,6 +217,9 @@ export function NotesSection({
   onUpdate,
   onDelete,
   onTogglePin,
+  pendingLinkId,
+  pendingCredentialId,
+  onClearPending,
 }: Props) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -224,6 +230,32 @@ export function NotesSection({
     linkedLinkId: '',
     linkedCredentialId: '',
   });
+
+  // Auto-open dialog when coming from Link/Credential
+  const [pendingHandled, setPendingHandled] = useState(false);
+  if ((pendingLinkId || pendingCredentialId) && !pendingHandled && !showDialog) {
+    const linkedLink = pendingLinkId ? links.find(l => l.id === pendingLinkId) : null;
+    const linkedCredential = pendingCredentialId ? credentials.find(c => c.id === pendingCredentialId) : null;
+
+    setFormData({
+      title: linkedLink ? `Note for ${linkedLink.name}` : linkedCredential ? `Note for ${linkedCredential.name}` : '',
+      content: '',
+      category: 'General',
+      linkedLinkId: pendingLinkId || '',
+      linkedCredentialId: pendingCredentialId || '',
+    });
+    setShowDialog(true);
+    setPendingHandled(true);
+  }
+
+  // Reset pending handled when dialog closes
+  const handleCancel = () => {
+    setShowDialog(false);
+    setEditingNote(null);
+    setFormData({ title: '', content: '', category: 'General', linkedLinkId: '', linkedCredentialId: '' });
+    setPendingHandled(false);
+    onClearPending?.();
+  };
 
   // Filter notes
   const filteredNotes = notes.filter((note) =>
@@ -272,12 +304,6 @@ export function NotesSection({
       linkedCredentialId: note.linkedCredentialId || '',
     });
     setShowDialog(true);
-  };
-
-  const handleCancel = () => {
-    setShowDialog(false);
-    setEditingNote(null);
-    setFormData({ title: '', content: '', category: 'General', linkedLinkId: '', linkedCredentialId: '' });
   };
 
   return (

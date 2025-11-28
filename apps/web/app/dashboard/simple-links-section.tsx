@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2 } from 'lucide-react';
+import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import styles from './card.module.css';
@@ -16,18 +16,34 @@ interface Link {
   description?: string | null;
   favicon?: string | null;
   isPinned?: boolean | null;
+  linkedCredentialId?: string | null;
   createdAt: string;
+}
+
+interface LinkedNote {
+  id: string;
+  title: string;
+  content: string;
+}
+
+interface CredentialOption {
+  id: string;
+  name: string;
 }
 
 interface SimpleLinksSectionProps {
   links: Link[] | undefined;
   onDeleteLink: (id: string) => void;
   onTogglePin: (id: string) => void;
-  onCreateLink: (data: { name: string; url: string; category: string; description?: string; favicon?: string }) => void;
-  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string; favicon?: string }) => void;
+  onCreateLink: (data: { name: string; url: string; category: string; description?: string; favicon?: string; linkedCredentialId?: string }) => void;
+  onUpdateLink: (data: { id: string; name: string; url: string; category: string; description?: string; favicon?: string; linkedCredentialId?: string }) => void;
   categories: string[];
   colorMap?: Record<string, string>;
   onAddCategory: (name: string, color?: string) => void;
+  onAddNote?: (linkId: string) => void;
+  notesCountByLinkId?: Record<string, number>;
+  notesByLinkId?: Record<string, LinkedNote[]>;
+  credentials?: CredentialOption[];
 }
 
 // Link Card Component
@@ -36,16 +52,35 @@ function LinkCard({
   onTogglePin,
   onEdit,
   onDelete,
+  onAddNote,
   categoryColor,
+  notesCount = 0,
+  linkedNotes = [],
+  linkedCredentialName,
+  onCopyCredential,
 }: {
   link: Link;
   onTogglePin: (id: string) => void;
   onEdit: (link: Link) => void;
   onDelete: (id: string) => void;
+  onAddNote?: (linkId: string) => void;
   categoryColor?: string;
+  notesCount?: number;
+  linkedNotes?: LinkedNote[];
+  linkedCredentialName?: string;
+  onCopyCredential?: (credentialId: string) => void;
 }) {
+  const [copied, setCopied] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [previewNote, setPreviewNote] = useState<LinkedNote | null>(null);
   const categoryClass = link.category.toLowerCase();
   const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
+
+  const handleCopyUrl = async () => {
+    await navigator.clipboard.writeText(link.url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div
@@ -76,10 +111,84 @@ function LinkCard({
         >
           {link.category}
         </span>
-        {link.isPinned && (
-          <Star className={styles.pinIcon} />
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          {linkedCredentialName && (
+            <button
+              onClick={() => link.linkedCredentialId && onCopyCredential?.(link.linkedCredentialId)}
+              className={styles.credentialBadge}
+              title={`Copy credential: ${linkedCredentialName}`}
+            >
+              <Shield style={{ width: '0.75rem', height: '0.75rem' }} />
+              <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {linkedCredentialName}
+              </span>
+            </button>
+          )}
+          {notesCount > 0 && (
+            <button
+              onClick={() => setShowNotes(!showNotes)}
+              className={styles.notesBadge}
+              style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+              title={`${notesCount} Note${notesCount > 1 ? 's' : ''} - Click to ${showNotes ? 'hide' : 'show'}`}
+            >
+              <span className={styles.notesBadge}>
+                <StickyNote style={{ width: '0.75rem', height: '0.75rem' }} />
+                {notesCount}
+                {showNotes ? (
+                  <ChevronUp style={{ width: '0.75rem', height: '0.75rem', marginLeft: '0.125rem' }} />
+                ) : (
+                  <ChevronDown style={{ width: '0.75rem', height: '0.75rem', marginLeft: '0.125rem' }} />
+                )}
+              </span>
+            </button>
+          )}
+          {link.isPinned && (
+            <Star className={styles.pinIcon} />
+          )}
+        </div>
       </div>
+
+      {/* Linked Notes Expandable */}
+      {showNotes && linkedNotes.length > 0 && (
+        <div className={styles.linkedNotes}>
+          {linkedNotes.map((note) => (
+            <div
+              key={note.id}
+              className={styles.linkedNoteItem}
+              onClick={() => setPreviewNote(note)}
+              style={{ cursor: 'pointer' }}
+            >
+              <StickyNote style={{ width: '0.875rem', height: '0.875rem', color: '#8b5cf6', flexShrink: 0 }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className={styles.linkedNoteTitle}>{note.title}</div>
+                <div className={styles.linkedNoteContent}>
+                  {note.content.length > 100 ? note.content.substring(0, 100) + '...' : note.content}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Note Preview Modal */}
+      {previewNote && (
+        <div className={dialogStyles.overlay} onClick={() => setPreviewNote(null)}>
+          <div className={dialogStyles.dialog} onClick={(e) => e.stopPropagation()}>
+            <div className={dialogStyles.dialogHeader}>
+              <h3 className={dialogStyles.dialogTitle}>
+                <StickyNote style={{ width: '1.25rem', height: '1.25rem', color: '#8b5cf6', marginRight: '0.5rem' }} />
+                {previewNote.title}
+              </h3>
+              <button onClick={() => setPreviewNote(null)} className={dialogStyles.closeButton}>
+                <X style={{ width: '1rem', height: '1rem' }} />
+              </button>
+            </div>
+            <div style={{ padding: 'var(--space-4)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+              {previewNote.content}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className={`${styles.cardContent} ${styles.linkContent}`}>
@@ -121,6 +230,28 @@ function LinkCard({
         <Button
           variant="ghost"
           size="icon"
+          onClick={handleCopyUrl}
+          title={copied ? 'Copied!' : 'Copy URL'}
+        >
+          {copied ? (
+            <Check style={{ width: '1rem', height: '1rem', color: '#22c55e' }} />
+          ) : (
+            <Copy style={{ width: '1rem', height: '1rem' }} />
+          )}
+        </Button>
+        {onAddNote && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onAddNote(link.id)}
+            title="Add Note"
+          >
+            <StickyNote style={{ width: '1rem', height: '1rem' }} />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => onEdit(link)}
           title="Edit"
         >
@@ -151,7 +282,7 @@ function LinkCard({
   );
 }
 
-export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, categories, colorMap = {}, onAddCategory }: SimpleLinksSectionProps) {
+export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, onUpdateLink, categories, colorMap = {}, onAddCategory, onAddNote, notesCountByLinkId = {}, notesByLinkId = {}, credentials = [] }: SimpleLinksSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingLink, setEditingLink] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -160,12 +291,33 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     category: 'General',
     description: '',
     favicon: '',
+    linkedCredentialId: '',
   });
   const [isFetchingMeta, setIsFetchingMeta] = useState(false);
+  const [copyingCredentialId, setCopyingCredentialId] = useState<string | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch metadata mutation
   const fetchMetadataMutation = trpc.links.fetchMetadata.useMutation();
+
+  // Query for copying credentials
+  const { data: credentialToCopy } = trpc.credentials.getById.useQuery(
+    { id: copyingCredentialId! },
+    { enabled: !!copyingCredentialId }
+  );
+
+  // Copy credential to clipboard when data is fetched
+  if (credentialToCopy && copyingCredentialId) {
+    navigator.clipboard.writeText(credentialToCopy.data);
+    import('sonner').then(({ toast }) => toast.success('Credential copied!'));
+    setCopyingCredentialId(null);
+  }
+
+  // Helper to get credential name by ID
+  const getCredentialName = (credentialId: string | null | undefined) => {
+    if (!credentialId) return undefined;
+    return credentials.find(c => c.id === credentialId)?.name;
+  };
 
   // Auto-fetch metadata when URL changes (with debounce)
   const handleUrlChange = (url: string) => {
@@ -214,7 +366,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
       onCreateLink({ ...formData });
     }
 
-    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '' });
+    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '', linkedCredentialId: '' });
     setShowDialog(false);
     setEditingLink(null);
   };
@@ -227,6 +379,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
       category: link.category,
       description: link.description || '',
       favicon: link.favicon || '',
+      linkedCredentialId: link.linkedCredentialId || '',
     });
     setShowDialog(true);
   };
@@ -234,7 +387,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   const handleCancel = () => {
     setShowDialog(false);
     setEditingLink(null);
-    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '' });
+    setFormData({ name: '', url: '', category: 'General', description: '', favicon: '', linkedCredentialId: '' });
   };
 
   return (
@@ -316,6 +469,21 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                   className={`${dialogStyles.input} ${dialogStyles.textarea}`}
                 />
               </div>
+              {credentials.length > 0 && (
+                <div className={dialogStyles.formField}>
+                  <label className={dialogStyles.label}>Linked Credential</label>
+                  <select
+                    value={formData.linkedCredentialId}
+                    onChange={(e) => setFormData({ ...formData, linkedCredentialId: e.target.value })}
+                    className={dialogStyles.input}
+                  >
+                    <option value="">-- No Credential --</option>
+                    {credentials.map((cred) => (
+                      <option key={cred.id} value={cred.id}>{cred.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className={dialogStyles.formActions}>
                 <Button type="submit" style={{ flex: 1 }}>{editingLink ? 'Update' : 'Add'} Link</Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
@@ -340,7 +508,12 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDeleteLink}
+                onAddNote={onAddNote}
                 categoryColor={colorMap[link.category]}
+                notesCount={notesCountByLinkId[link.id] || 0}
+                linkedNotes={notesByLinkId[link.id] || []}
+                linkedCredentialName={getCredentialName(link.linkedCredentialId)}
+                onCopyCredential={setCopyingCredentialId}
               />
             ))}
           </div>
@@ -363,7 +536,12 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDeleteLink}
+                onAddNote={onAddNote}
                 categoryColor={colorMap[link.category]}
+                notesCount={notesCountByLinkId[link.id] || 0}
+                linkedNotes={notesByLinkId[link.id] || []}
+                linkedCredentialName={getCredentialName(link.linkedCredentialId)}
+                onCopyCredential={setCopyingCredentialId}
               />
             ))}
           </div>

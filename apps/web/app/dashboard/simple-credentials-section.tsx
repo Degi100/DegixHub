@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, Eye, Copy, Trash2, Plus, Shield, X, Edit } from 'lucide-react';
+import { Star, Eye, Copy, Trash2, Plus, Shield, X, Edit, StickyNote, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
@@ -17,6 +17,12 @@ interface Credential {
   createdAt: string;
 }
 
+interface LinkedNote {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface SimpleCredentialsSectionProps {
   credentials: Credential[] | undefined;
   onDeleteCredential: (id: string) => void;
@@ -26,6 +32,9 @@ interface SimpleCredentialsSectionProps {
   categories: string[];
   colorMap?: Record<string, string>;
   onAddCategory: (name: string, color?: string) => void;
+  onAddNote?: (credentialId: string) => void;
+  notesCountByCredentialId?: Record<string, number>;
+  notesByCredentialId?: Record<string, LinkedNote[]>;
 }
 
 // Credential Card Component
@@ -35,15 +44,23 @@ function CredentialCard({
   onView,
   onEdit,
   onDelete,
+  onAddNote,
   categoryColor,
+  notesCount = 0,
+  linkedNotes = [],
 }: {
   credential: Credential;
   onTogglePin: (id: string) => void;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onAddNote?: (credentialId: string) => void;
   categoryColor?: string;
+  notesCount?: number;
+  linkedNotes?: LinkedNote[];
 }) {
+  const [showNotes, setShowNotes] = useState(false);
+  const [previewNote, setPreviewNote] = useState<LinkedNote | null>(null);
   const categoryClass = credential.category.toLowerCase();
   const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
 
@@ -77,6 +94,23 @@ function CredentialCard({
           {credential.category}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {notesCount > 0 && (
+            <button
+              onClick={() => setShowNotes(!showNotes)}
+              style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+              title={`${notesCount} Note${notesCount > 1 ? 's' : ''} - Click to ${showNotes ? 'hide' : 'show'}`}
+            >
+              <span className={styles.notesBadge}>
+                <StickyNote style={{ width: '0.75rem', height: '0.75rem' }} />
+                {notesCount}
+                {showNotes ? (
+                  <ChevronUp style={{ width: '0.75rem', height: '0.75rem', marginLeft: '0.125rem' }} />
+                ) : (
+                  <ChevronDown style={{ width: '0.75rem', height: '0.75rem', marginLeft: '0.125rem' }} />
+                )}
+              </span>
+            </button>
+          )}
           <div className={styles.securityBadge}>
             <Shield />
             <span>AES-256</span>
@@ -86,6 +120,48 @@ function CredentialCard({
           )}
         </div>
       </div>
+
+      {/* Linked Notes Expandable */}
+      {showNotes && linkedNotes.length > 0 && (
+        <div className={styles.linkedNotes}>
+          {linkedNotes.map((note) => (
+            <div
+              key={note.id}
+              className={styles.linkedNoteItem}
+              onClick={() => setPreviewNote(note)}
+              style={{ cursor: 'pointer' }}
+            >
+              <StickyNote style={{ width: '0.875rem', height: '0.875rem', color: '#8b5cf6', flexShrink: 0 }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className={styles.linkedNoteTitle}>{note.title}</div>
+                <div className={styles.linkedNoteContent}>
+                  {note.content.length > 100 ? note.content.substring(0, 100) + '...' : note.content}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Note Preview Modal */}
+      {previewNote && (
+        <div className={dialogStyles.overlay} onClick={() => setPreviewNote(null)}>
+          <div className={dialogStyles.dialog} onClick={(e) => e.stopPropagation()}>
+            <div className={dialogStyles.dialogHeader}>
+              <h3 className={dialogStyles.dialogTitle}>
+                <StickyNote style={{ width: '1.25rem', height: '1.25rem', color: '#8b5cf6', marginRight: '0.5rem' }} />
+                {previewNote.title}
+              </h3>
+              <button onClick={() => setPreviewNote(null)} className={dialogStyles.closeButton}>
+                <X style={{ width: '1rem', height: '1rem' }} />
+              </button>
+            </div>
+            <div style={{ padding: 'var(--space-4)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+              {previewNote.content}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className={`${styles.cardContent} ${styles.credentialContent}`}>
@@ -119,6 +195,16 @@ function CredentialCard({
         >
           <Eye style={{ width: '1rem', height: '1rem' }} />
         </Button>
+        {onAddNote && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onAddNote(credential.id)}
+            title="Add Note"
+          >
+            <StickyNote style={{ width: '1rem', height: '1rem' }} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -153,6 +239,9 @@ export function SimpleCredentialsSection({
   categories,
   colorMap = {},
   onAddCategory,
+  onAddNote,
+  notesCountByCredentialId = {},
+  notesByCredentialId = {},
 }: SimpleCredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -295,7 +384,10 @@ export function SimpleCredentialsSection({
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
                 onEdit={handleEdit}
                 onDelete={onDeleteCredential}
+                onAddNote={onAddNote}
                 categoryColor={colorMap[cred.category]}
+                notesCount={notesCountByCredentialId[cred.id] || 0}
+                linkedNotes={notesByCredentialId[cred.id] || []}
               />
             ))}
           </div>
@@ -319,7 +411,10 @@ export function SimpleCredentialsSection({
                 onView={(id) => setViewingId(viewingId === id ? null : id)}
                 onEdit={handleEdit}
                 onDelete={onDeleteCredential}
+                onAddNote={onAddNote}
                 categoryColor={colorMap[cred.category]}
+                notesCount={notesCountByCredentialId[cred.id] || 0}
+                linkedNotes={notesByCredentialId[cred.id] || []}
               />
             ))}
           </div>

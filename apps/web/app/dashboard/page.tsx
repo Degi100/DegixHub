@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingNoteLink, setPendingNoteLink] = useState<string | null>(null);
+  const [pendingNoteCredential, setPendingNoteCredential] = useState<string | null>(null);
 
   // Session check
   const { data: session, isLoading: sessionLoading } = trpc.auth.getSession.useQuery();
@@ -176,6 +178,38 @@ export default function DashboardPage() {
       (notes?.filter((n) => n.isPinned).length || 0),
   };
 
+  // Calculate notes count and notes list by linked resource
+  const notesCountByLinkId: Record<string, number> = {};
+  const notesCountByCredentialId: Record<string, number> = {};
+  const notesByLinkId: Record<string, { id: string; title: string; content: string }[]> = {};
+  const notesByCredentialId: Record<string, { id: string; title: string; content: string }[]> = {};
+
+  notes?.forEach((note) => {
+    if (note.linkedLinkId) {
+      notesCountByLinkId[note.linkedLinkId] = (notesCountByLinkId[note.linkedLinkId] || 0) + 1;
+      if (!notesByLinkId[note.linkedLinkId]) notesByLinkId[note.linkedLinkId] = [];
+      notesByLinkId[note.linkedLinkId].push({ id: note.id, title: note.title, content: note.content });
+    }
+    if (note.linkedCredentialId) {
+      notesCountByCredentialId[note.linkedCredentialId] = (notesCountByCredentialId[note.linkedCredentialId] || 0) + 1;
+      if (!notesByCredentialId[note.linkedCredentialId]) notesByCredentialId[note.linkedCredentialId] = [];
+      notesByCredentialId[note.linkedCredentialId].push({ id: note.id, title: note.title, content: note.content });
+    }
+  });
+
+  // Handler for adding note from Link/Credential
+  const handleAddNoteFromLink = (linkId: string) => {
+    setPendingNoteLink(linkId);
+    setPendingNoteCredential(null);
+    setActiveSection('notes');
+  };
+
+  const handleAddNoteFromCredential = (credentialId: string) => {
+    setPendingNoteCredential(credentialId);
+    setPendingNoteLink(null);
+    setActiveSection('notes');
+  };
+
   return (
     <div className={styles.dashboard}>
       {/* Sidebar */}
@@ -234,6 +268,10 @@ export default function DashboardPage() {
               onAddCategory={async (name, color) => {
                 await createCategoryMutation.mutateAsync({ name, color });
               }}
+              onAddNote={handleAddNoteFromLink}
+              notesCountByLinkId={notesCountByLinkId}
+              notesByLinkId={notesByLinkId}
+              credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
             />
           )}
 
@@ -256,6 +294,9 @@ export default function DashboardPage() {
               onAddCategory={async (name, color) => {
                 await createCategoryMutation.mutateAsync({ name, color });
               }}
+              onAddNote={handleAddNoteFromCredential}
+              notesCountByCredentialId={notesCountByCredentialId}
+              notesByCredentialId={notesByCredentialId}
             />
           )}
 
@@ -265,7 +306,11 @@ export default function DashboardPage() {
               searchQuery={searchQuery}
               links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
               credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
-              onCreate={(data) => createNoteMutation.mutate(data)}
+              onCreate={(data) => {
+                createNoteMutation.mutate(data);
+                setPendingNoteLink(null);
+                setPendingNoteCredential(null);
+              }}
               onUpdate={(id, data) => {
                 const cleanData: any = { ...data };
                 if (cleanData.isPinned === null) cleanData.isPinned = undefined;
@@ -279,6 +324,12 @@ export default function DashboardPage() {
               colorMap={categoriesData?.colorMap || {}}
               onAddCategory={async (name, color) => {
                 await createCategoryMutation.mutateAsync({ name, color });
+              }}
+              pendingLinkId={pendingNoteLink}
+              pendingCredentialId={pendingNoteCredential}
+              onClearPending={() => {
+                setPendingNoteLink(null);
+                setPendingNoteCredential(null);
               }}
             />
           )}

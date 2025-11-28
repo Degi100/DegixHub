@@ -29,6 +29,7 @@ export const links = sqliteTable('links', {
   description: text('description'),
   favicon: text('favicon'), // URL to the site's favicon
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
+  linkedCredentialId: text('linked_credential_id').references(() => credentials.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
