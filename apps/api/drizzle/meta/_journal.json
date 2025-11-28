@@ -29,6 +29,27 @@
       "when": 1764109822363,
       "tag": "0003_add_category_color",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1764110822363,
+      "tag": "0004_add_link_favicon",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1764111822363,
+      "tag": "0005_add_security_pin",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1764112822363,
+      "tag": "0006_add_link_credential_linking",
+      "breakpoints": true
     }
   ]
 }
