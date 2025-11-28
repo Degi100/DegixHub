@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
+import styles from './command-palette.module.css';
 
 interface Tag {
   id: string;
@@ -160,13 +161,13 @@ export function CommandPalette({
   const getResultIcon = (result: SearchResult) => {
     if (result.type === 'credential') {
       return (
-        <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className={`${styles.resultIcon} ${styles.iconCredential}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
       );
     }
     return (
-      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className={`${styles.resultIcon} ${styles.iconLink}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
       </svg>
     );
@@ -175,58 +176,56 @@ export function CommandPalette({
   const getResultAction = (result: SearchResult) => {
     if (result.type === 'credential') {
       return (
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className={styles.resultAction}>
           {copiedId === result.item.id ? '✓ Copied' : 'Copy'}
         </span>
       );
     }
     return (
-      <span className="text-xs text-gray-500 dark:text-gray-400">Open</span>
+      <span className={styles.resultAction}>Open</span>
     );
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-start justify-center pt-4">
-      <div className="bg-card rounded-lg shadow-2xl w-full max-w-2xl mx-4 overflow-hidden border border-border">
+    <div className={styles.overlay}>
+      <div className={styles.modal}>
         {/* Search Input */}
-        <div className="p-3 border-b border-border">
+        <div className={styles.searchBox}>
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search credentials and links..."
-            className="w-full px-3 py-2 bg-transparent text-foreground placeholder-muted-foreground focus:outline-none text-sm"
+            className={styles.searchInput}
           />
         </div>
 
         {/* Results */}
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className={styles.results}>
           {results.length > 0 ? (
-            <div className="py-2">
+            <div className={styles.resultsList}>
               {results.map((result, index) => (
                 <button
                   key={`${result.type}-${result.item.id}`}
                   onClick={() => handleSelectResult(result)}
-                  className={`w-full px-3 py-2 flex items-center gap-2 hover:bg-muted transition-colors ${
-                    index === selectedIndex ? 'bg-muted' : ''
-                  }`}
+                  className={`${styles.resultItem} ${index === selectedIndex ? styles.resultItemSelected : ''}`}
                 >
                   {getResultIcon(result)}
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="font-medium text-foreground text-sm truncate">
+                  <div className={styles.resultContent}>
+                    <div className={styles.resultName}>
                       {result.item.name}
                     </div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <span className="px-1.5 py-0.5 bg-muted rounded text-xs">
+                    <div className={styles.resultMeta}>
+                      <span className={styles.categoryBadge}>
                         {result.item.category}
                       </span>
                       {result.item.tags.map((tag) => (
                         <span
                           key={tag.id}
-                          className="px-1.5 py-0.5 rounded text-xs"
+                          className={styles.tagBadge}
                           style={{ backgroundColor: `${tag.color}30`, color: tag.color }}
                         >
                           {tag.name}
@@ -239,15 +238,15 @@ export function CommandPalette({
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-muted-foreground text-sm">
+            <div className={styles.emptyState}>
               {query ? 'No results found' : 'Start typing to search...'}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-3 py-2 border-t border-border bg-muted/50 flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
+        <div className={styles.footer}>
+          <div className={styles.shortcuts}>
             <span>↑↓ Navigate</span>
             <span>↵ Select</span>
             <span>Esc Close</span>
