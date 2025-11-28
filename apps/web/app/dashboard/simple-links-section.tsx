@@ -7,6 +7,7 @@ import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
+import { copyToClipboard } from '@/lib/clipboard';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -79,7 +80,7 @@ function LinkCard({
   const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
 
   const handleCopyUrl = async () => {
-    await navigator.clipboard.writeText(link.url);
+    await copyToClipboard(link.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -316,7 +317,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
 
   // Copy credential to clipboard when data is fetched
   if (credentialToCopy && copyingCredentialId) {
-    navigator.clipboard.writeText(credentialToCopy.data);
+    copyToClipboard(credentialToCopy.data);
     import('sonner').then(({ toast }) => toast.success('Credential copied!'));
     setCopyingCredentialId(null);
   }

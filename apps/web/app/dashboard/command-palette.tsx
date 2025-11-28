@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
+import { copyToClipboard } from '@/lib/clipboard';
 import styles from './command-palette.module.css';
 
 interface Tag {
@@ -139,7 +140,7 @@ export function CommandPalette({
   // Copy credential when data is fetched
   useEffect(() => {
     if (viewedCredential && viewingCredentialId) {
-      navigator.clipboard.writeText(viewedCredential.data);
+      copyToClipboard(viewedCredential.data);
       setCopiedId(viewingCredentialId);
       setTimeout(() => setCopiedId(null), 2000);
       setViewingCredentialId(null);

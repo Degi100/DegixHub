@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { copyToClipboard } from '@/lib/clipboard';
 import styles from '../auth.module.css';
 
 function EmergencyKitContent() {
@@ -17,9 +18,9 @@ function EmergencyKitContent() {
     }
   }, [recoveryKey, router]);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (recoveryKey) {
-      navigator.clipboard.writeText(recoveryKey);
+      await copyToClipboard(recoveryKey);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

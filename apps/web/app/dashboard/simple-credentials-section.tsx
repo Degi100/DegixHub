@@ -8,6 +8,7 @@ import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
+import { copyToClipboard } from '@/lib/clipboard';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -271,8 +272,8 @@ export function SimpleCredentialsSection({
     { enabled: !!editingId }
   );
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleCopy = async (text: string) => {
+    await copyToClipboard(text);
     toast.success('Copied to clipboard');
   };
 
@@ -515,7 +516,7 @@ export function SimpleCredentialsSection({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => copyToClipboard(viewedCredential.data)}
+                    onClick={() => handleCopy(viewedCredential.data)}
                   >
                     <Copy style={{ width: '0.75rem', height: '0.75rem', marginRight: 'var(--space-2)' }} />
                     Copy
