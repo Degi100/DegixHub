@@ -118,9 +118,6 @@ function CredentialCard({
             <Shield />
             <span>AES-256</span>
           </div>
-          {credential.isPinned && (
-            <Star className={styles.pinIcon} />
-          )}
         </div>
       </div>
 
@@ -612,7 +609,6 @@ export function SimpleCredentialsSection({
                 >
                   <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      {cred.isPinned && <Star style={{ width: '14px', height: '14px', fill: '#eab308', color: '#eab308' }} />}
                       <Shield style={{ width: '14px', height: '14px', color: 'var(--color-muted-foreground)' }} />
                       {cred.name}
                     </div>

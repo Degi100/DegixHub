@@ -99,9 +99,6 @@ function NoteCard({
         >
           {note.category}
         </span>
-        {note.isPinned && (
-          <Star className={styles.pinIcon} />
-        )}
       </div>
 
       {/* Content */}
@@ -593,7 +590,6 @@ export function NotesSection({
                   >
                     <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        {note.isPinned && <Star style={{ width: '14px', height: '14px', fill: '#eab308', color: '#eab308' }} />}
                         <StickyNote style={{ width: '14px', height: '14px', color: 'var(--color-muted-foreground)' }} />
                         {note.title}
                       </div>

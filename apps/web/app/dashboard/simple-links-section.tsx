@@ -145,9 +145,6 @@ function LinkCard({
               </span>
             </button>
           )}
-          {link.isPinned && (
-            <Star className={styles.pinIcon} />
-          )}
         </div>
       </div>
 
@@ -736,19 +733,16 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                     )}
                   </td>
                   <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      {link.isPinned && <Star style={{ width: '14px', height: '14px', fill: '#eab308', color: '#eab308' }} />}
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: 'var(--color-primary)', textDecoration: 'none' }}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                      >
-                        {link.name}
-                      </a>
-                    </div>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--color-primary)', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                    >
+                      {link.name}
+                    </a>
                   </td>
                   <td style={{ padding: 'var(--space-3)', color: 'var(--color-muted-foreground)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {link.description || '-'}
