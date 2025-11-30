@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, Plus, X, Edit, Trash2, Link as LinkIcon, Key } from 'lucide-react';
+import { Star, Plus, X, Edit, Trash2, Link as LinkIcon, Key, Filter, Grid, List, StickyNote } from 'lucide-react';
 import { CategorySelect } from './category-select';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
@@ -231,6 +231,38 @@ export function NotesSection({
     linkedCredentialId: '',
   });
 
+  // Filter & View state
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+
+    if (showFilterDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFilterDropdown]);
+
+  // Get unique categories from notes
+  const usedCategories = [...new Set(notes?.map(n => n.category) || [])];
+
+  // Toggle category filter
+  const toggleCategoryFilter = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
   // Auto-open dialog when coming from Link/Credential
   const [pendingHandled, setPendingHandled] = useState(false);
   if ((pendingLinkId || pendingCredentialId) && !pendingHandled && !showDialog) {
@@ -257,14 +289,18 @@ export function NotesSection({
     onClearPending?.();
   };
 
-  // Filter notes
-  const filteredNotes = notes.filter((note) =>
-    searchQuery
+  // Filter notes by search and category
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch = searchQuery
       ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         note.category.toLowerCase().includes(searchQuery.toLowerCase())
-      : true
-  );
+      : true;
+    const matchesCategory = selectedCategories.length > 0
+      ? selectedCategories.includes(note.category)
+      : true;
+    return matchesSearch && matchesCategory;
+  });
 
   const pinnedNotes = filteredNotes.filter(n => n.isPinned).sort((a, b) =>
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -310,11 +346,134 @@ export function NotesSection({
     <div className={dialogStyles.section}>
       <div className={dialogStyles.sectionHeader}>
         <h2 className={dialogStyles.sectionTitle}>Notes</h2>
-        <Button size="sm" onClick={() => setShowDialog(true)}>
-          <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
-          Add Note
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {/* View Toggle */}
+          <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+            <Button
+              size="sm"
+              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+              onClick={() => setViewMode('grid')}
+              style={{ borderRadius: 0, padding: '0.5rem' }}
+              title="Grid View"
+            >
+              <Grid style={{ width: '1rem', height: '1rem' }} />
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'primary' : 'ghost'}
+              onClick={() => setViewMode('table')}
+              style={{ borderRadius: 0, padding: '0.5rem' }}
+              title="Table View"
+            >
+              <List style={{ width: '1rem', height: '1rem' }} />
+            </Button>
+          </div>
+
+          {/* Category Filter */}
+          <div style={{ position: 'relative' }} ref={filterDropdownRef}>
+            <Button
+              size="sm"
+              variant={selectedCategories.length > 0 ? 'primary' : 'outline'}
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            >
+              <Filter style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
+              Filter {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+            </Button>
+            {showFilterDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: 'var(--space-2)',
+                background: 'var(--color-card)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+                minWidth: '180px',
+                zIndex: 50,
+                padding: 'var(--space-2)',
+              }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', padding: 'var(--space-2)', fontWeight: 600 }}>
+                  Kategorien
+                </div>
+                {usedCategories.map(category => (
+                  <label
+                    key={category}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)',
+                      padding: 'var(--space-2)',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => toggleCategoryFilter(category)}
+                      style={{ accentColor: colorMap[category] || 'var(--color-primary)' }}
+                    />
+                    <span style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: colorMap[category] || 'var(--color-muted-foreground)',
+                    }} />
+                    <span style={{ fontSize: 'var(--text-sm)' }}>{category}</span>
+                  </label>
+                ))}
+                {selectedCategories.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedCategories([])}
+                    style={{ width: '100%', marginTop: 'var(--space-2)' }}
+                  >
+                    Filter zurücksetzen
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Button size="sm" onClick={() => setShowDialog(true)}>
+            <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
+            Add Note
+          </Button>
+        </div>
       </div>
+
+      {/* Active Filters Display */}
+      {selectedCategories.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-foreground)' }}>Filter:</span>
+          {selectedCategories.map(category => (
+            <span
+              key={category}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--space-1)',
+                padding: '2px 8px',
+                background: colorMap[category] || 'var(--color-muted)',
+                color: 'white',
+                borderRadius: 'var(--radius-full)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 500,
+              }}
+            >
+              {category}
+              <X
+                style={{ width: '12px', height: '12px', cursor: 'pointer' }}
+                onClick={() => toggleCategoryFilter(category)}
+              />
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Add/Edit Note Dialog */}
       {showDialog && (
@@ -397,8 +556,102 @@ export function NotesSection({
         </div>
       )}
 
-      {/* Pinned Notes */}
-      {pinnedNotes.length > 0 && (
+      {/* Table View */}
+      {viewMode === 'table' && filteredNotes.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 'var(--text-sm)',
+          }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Titel</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Inhalt</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Kategorie</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Verknüpft</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'right', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...filteredNotes].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+              }).map((note) => {
+                const linkedLink = links.find(l => l.id === note.linkedLinkId);
+                const linkedCredential = credentials.find(c => c.id === note.linkedCredentialId);
+                return (
+                  <tr
+                    key={note.id}
+                    style={{
+                      borderBottom: '1px solid var(--color-border)',
+                      background: note.isPinned ? 'var(--color-muted)' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = note.isPinned ? 'var(--color-muted)' : 'transparent'}
+                  >
+                    <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        {note.isPinned && <Star style={{ width: '14px', height: '14px', fill: '#eab308', color: '#eab308' }} />}
+                        <StickyNote style={{ width: '14px', height: '14px', color: 'var(--color-muted-foreground)' }} />
+                        {note.title}
+                      </div>
+                    </td>
+                    <td style={{ padding: 'var(--space-3)', color: 'var(--color-muted-foreground)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {note.content.substring(0, 50)}{note.content.length > 50 ? '...' : ''}
+                    </td>
+                    <td style={{ padding: 'var(--space-3)' }}>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 'var(--text-xs)',
+                        background: colorMap[note.category] || 'var(--color-muted)',
+                        color: colorMap[note.category] ? 'white' : 'var(--color-foreground)',
+                      }}>
+                        {note.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: 'var(--space-3)' }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                        {linkedLink && (
+                          <span style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-muted-foreground)' }}>
+                            <LinkIcon style={{ width: '12px', height: '12px' }} />
+                            {linkedLink.name}
+                          </span>
+                        )}
+                        {linkedCredential && (
+                          <span style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-muted-foreground)' }}>
+                            <Key style={{ width: '12px', height: '12px' }} />
+                            {linkedCredential.name}
+                          </span>
+                        )}
+                        {!linkedLink && !linkedCredential && <span style={{ color: 'var(--color-muted-foreground)' }}>-</span>}
+                      </div>
+                    </td>
+                    <td style={{ padding: 'var(--space-2)', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                        <Button variant="ghost" size="icon" onClick={() => onTogglePin(note.id)} title={note.isPinned ? 'Unpin' : 'Pin'}>
+                          <Star style={{ width: '14px', height: '14px', fill: note.isPinned ? '#eab308' : 'none', color: note.isPinned ? '#eab308' : 'currentColor' }} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(note)} title="Edit">
+                          <Edit style={{ width: '14px', height: '14px' }} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (confirm('Delete this note?')) onDelete(note.id); }} title="Delete">
+                          <Trash2 style={{ width: '14px', height: '14px', color: 'var(--color-destructive)' }} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Grid View - Pinned Notes */}
+      {viewMode === 'grid' && pinnedNotes.length > 0 && (
         <div className={dialogStyles.cardSection}>
           <h3 className={dialogStyles.subsectionTitle}>
             <Star className={styles.pinIcon} />
@@ -421,32 +674,34 @@ export function NotesSection({
         </div>
       )}
 
-      {/* All Notes */}
-      <div className={dialogStyles.cardSection}>
-        <h3 className={dialogStyles.subsectionTitle}>
-          {pinnedNotes.length > 0 ? 'All Notes' : 'Notes'} ({unpinnedNotes.length})
-        </h3>
-        {unpinnedNotes.length === 0 ? (
-          <p style={{ color: 'var(--color-muted-foreground)', padding: 'var(--space-4)' }}>
-            {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
-          </p>
-        ) : (
-          <div className={dialogStyles.grid}>
-            {unpinnedNotes.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onTogglePin={onTogglePin}
-                onEdit={handleEdit}
-                onDelete={onDelete}
-                links={links}
-                credentials={credentials}
-                categoryColor={colorMap[note.category]}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Grid View - All Notes */}
+      {viewMode === 'grid' && (
+        <div className={dialogStyles.cardSection}>
+          <h3 className={dialogStyles.subsectionTitle}>
+            {pinnedNotes.length > 0 ? 'All Notes' : 'Notes'} ({unpinnedNotes.length})
+          </h3>
+          {unpinnedNotes.length === 0 ? (
+            <p style={{ color: 'var(--color-muted-foreground)', padding: 'var(--space-4)' }}>
+              {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
+            </p>
+          ) : (
+            <div className={dialogStyles.grid}>
+              {unpinnedNotes.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  onTogglePin={onTogglePin}
+                  onEdit={handleEdit}
+                  onDelete={onDelete}
+                  links={links}
+                  credentials={credentials}
+                  categoryColor={colorMap[note.category]}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

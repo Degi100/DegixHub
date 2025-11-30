@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { Star, ExternalLink, Trash2, Plus, X, Edit, Loader2, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield, Filter, Grid, List } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
@@ -306,6 +306,26 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   const [pinModalMode, setPinModalMode] = useState<'setup' | 'verify'>('verify');
   const [pendingCredentialCopy, setPendingCredentialCopy] = useState<string | null>(null);
 
+  // Filter & View state
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close filter dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setShowFilterDropdown(false);
+      }
+    };
+
+    if (showFilterDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFilterDropdown]);
+
   // Fetch metadata mutation
   const fetchMetadataMutation = trpc.links.fetchMetadata.useMutation();
 
@@ -392,13 +412,30 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     }
   };
 
-  const pinnedLinks = links?.filter(l => l.isPinned).sort((a, b) =>
+  // Filter links by selected categories
+  const filteredLinks = selectedCategories.length > 0
+    ? links?.filter(l => selectedCategories.includes(l.category))
+    : links;
+
+  const pinnedLinks = filteredLinks?.filter(l => l.isPinned).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const unpinnedLinks = links?.filter(l => !l.isPinned).sort((a, b) =>
+  const unpinnedLinks = filteredLinks?.filter(l => !l.isPinned).sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  // Get unique categories from links
+  const usedCategories = [...new Set(links?.map(l => l.category) || [])];
+
+  // Toggle category filter
+  const toggleCategoryFilter = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,11 +474,134 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     <div className={dialogStyles.section}>
       <div className={dialogStyles.sectionHeader}>
         <h2 className={dialogStyles.sectionTitle}>Links</h2>
-        <Button size="sm" onClick={() => setShowDialog(true)}>
-          <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
-          Add Link
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {/* View Toggle */}
+          <div style={{ display: 'flex', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+            <Button
+              size="sm"
+              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+              onClick={() => setViewMode('grid')}
+              style={{ borderRadius: 0, padding: '0.5rem' }}
+              title="Grid View"
+            >
+              <Grid style={{ width: '1rem', height: '1rem' }} />
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'primary' : 'ghost'}
+              onClick={() => setViewMode('table')}
+              style={{ borderRadius: 0, padding: '0.5rem' }}
+              title="Table View"
+            >
+              <List style={{ width: '1rem', height: '1rem' }} />
+            </Button>
+          </div>
+
+          {/* Category Filter */}
+          <div style={{ position: 'relative' }} ref={filterDropdownRef}>
+            <Button
+              size="sm"
+              variant={selectedCategories.length > 0 ? 'primary' : 'outline'}
+              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            >
+              <Filter style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
+              Filter {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+            </Button>
+            {showFilterDropdown && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: 'var(--space-2)',
+                background: 'var(--color-card)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+                minWidth: '180px',
+                zIndex: 50,
+                padding: 'var(--space-2)',
+              }}>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', padding: 'var(--space-2)', fontWeight: 600 }}>
+                  Kategorien
+                </div>
+                {usedCategories.map(category => (
+                  <label
+                    key={category}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 'var(--space-2)',
+                      padding: 'var(--space-2)',
+                      cursor: 'pointer',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => toggleCategoryFilter(category)}
+                      style={{ accentColor: colorMap[category] || 'var(--color-primary)' }}
+                    />
+                    <span style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: colorMap[category] || 'var(--color-muted-foreground)',
+                    }} />
+                    <span style={{ fontSize: 'var(--text-sm)' }}>{category}</span>
+                  </label>
+                ))}
+                {selectedCategories.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setSelectedCategories([])}
+                    style={{ width: '100%', marginTop: 'var(--space-2)' }}
+                  >
+                    Filter zurücksetzen
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Button size="sm" onClick={() => setShowDialog(true)}>
+            <Plus style={{ width: '1rem', height: '1rem', marginRight: 'var(--space-2)' }} />
+            Add Link
+          </Button>
+        </div>
       </div>
+
+      {/* Active Filters Display */}
+      {selectedCategories.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-foreground)' }}>Filter:</span>
+          {selectedCategories.map(category => (
+            <span
+              key={category}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 'var(--space-1)',
+                padding: '2px 8px',
+                background: colorMap[category] || 'var(--color-muted)',
+                color: 'white',
+                borderRadius: 'var(--radius-full)',
+                fontSize: 'var(--text-xs)',
+                fontWeight: 500,
+              }}
+            >
+              {category}
+              <X
+                style={{ width: '12px', height: '12px', cursor: 'pointer' }}
+                onClick={() => toggleCategoryFilter(category)}
+              />
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Add/Edit Link Dialog */}
       {showDialog && (
@@ -536,8 +696,99 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
         </div>
       )}
 
-      {/* Pinned Links */}
-      {pinnedLinks && pinnedLinks.length > 0 && (
+      {/* Table View */}
+      {viewMode === 'table' && filteredLinks && filteredLinks.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontSize: 'var(--text-sm)',
+          }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}></th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Link</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Beschreibung</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Kategorie</th>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'right', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...filteredLinks].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              }).map((link) => (
+                <tr
+                  key={link.id}
+                  style={{
+                    borderBottom: '1px solid var(--color-border)',
+                    background: link.isPinned ? 'var(--color-muted)' : 'transparent',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = link.isPinned ? 'var(--color-muted)' : 'transparent'}
+                >
+                  <td style={{ padding: 'var(--space-2)' }}>
+                    {link.favicon ? (
+                      <img src={link.favicon} alt="" style={{ width: '20px', height: '20px', borderRadius: '4px' }} />
+                    ) : (
+                      <ExternalLink style={{ width: '16px', height: '16px', color: 'var(--color-muted-foreground)' }} />
+                    )}
+                  </td>
+                  <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      {link.isPinned && <Star style={{ width: '14px', height: '14px', fill: '#eab308', color: '#eab308' }} />}
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--color-primary)', textDecoration: 'none' }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        {link.name}
+                      </a>
+                    </div>
+                  </td>
+                  <td style={{ padding: 'var(--space-3)', color: 'var(--color-muted-foreground)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {link.description || '-'}
+                  </td>
+                  <td style={{ padding: 'var(--space-3)' }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: 'var(--text-xs)',
+                      background: colorMap[link.category] || 'var(--color-muted)',
+                      color: colorMap[link.category] ? 'white' : 'var(--color-foreground)',
+                    }}>
+                      {link.category}
+                    </span>
+                  </td>
+                  <td style={{ padding: 'var(--space-2)', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                      <Button variant="ghost" size="icon" onClick={() => onTogglePin(link.id)} title={link.isPinned ? 'Unpin' : 'Pin'}>
+                        <Star style={{ width: '14px', height: '14px', fill: link.isPinned ? '#eab308' : 'none', color: link.isPinned ? '#eab308' : 'currentColor' }} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(link)} title="Edit">
+                        <Edit style={{ width: '14px', height: '14px' }} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => window.open(link.url, '_blank')} title="Open">
+                        <ExternalLink style={{ width: '14px', height: '14px' }} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { if (confirm('Delete this link?')) onDeleteLink(link.id); }} title="Delete">
+                        <Trash2 style={{ width: '14px', height: '14px', color: 'var(--color-destructive)' }} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Grid View - Pinned Links */}
+      {viewMode === 'grid' && pinnedLinks && pinnedLinks.length > 0 && (
         <div className={dialogStyles.cardSection}>
           <h3 className={dialogStyles.subsectionTitle}>
             <Star className={styles.pinIcon} />
@@ -563,8 +814,8 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
         </div>
       )}
 
-      {/* Regular Links */}
-      {unpinnedLinks && unpinnedLinks.length > 0 && (
+      {/* Grid View - Regular Links */}
+      {viewMode === 'grid' && unpinnedLinks && unpinnedLinks.length > 0 && (
         <div className={dialogStyles.cardSection}>
           {pinnedLinks && pinnedLinks.length > 0 && (
             <h3 className={dialogStyles.subsectionTitle}>
