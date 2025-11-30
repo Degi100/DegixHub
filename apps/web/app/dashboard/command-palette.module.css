@@ -92,6 +92,14 @@
   color: #60a5fa;
 }
 
+.iconNote {
+  color: #8b5cf6;
+}
+
+.dark .iconNote {
+  color: #a78bfa;
+}
+
 .resultContent {
   flex: 1;
   min-width: 0;

@@ -242,10 +242,12 @@ export default function DashboardPage() {
 
             <input
               type="text"
-              placeholder="Search credentials and links..."
+              placeholder="Search... (⌘K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setShowCommandPalette(true)}
               className={styles.searchInput}
+              readOnly
             />
           </div>
 
@@ -373,6 +375,10 @@ export default function DashboardPage() {
           onClose={() => setShowCommandPalette(false)}
           links={links || []}
           credentials={credentials || []}
+          notes={notes?.map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category })) || []}
+          onNavigateToNote={() => {
+            setActiveSection('notes');
+          }}
         />
       </div>
     </PinProvider>
