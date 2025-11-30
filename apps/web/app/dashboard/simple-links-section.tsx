@@ -23,6 +23,7 @@ interface Link {
   pinOrder?: number | null;
   linkedCredentialId?: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface LinkedNote {
@@ -89,17 +90,17 @@ function LinkCard({
 
   return (
     <div
-      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''} ${link.isPinned ? styles.cardPinned : ''}`}
       style={hasCustomColor ? {
         '--custom-category-color': categoryColor,
       } as React.CSSProperties : undefined}
       onMouseEnter={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !link.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
         }
       }}
       onMouseLeave={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !link.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = '';
         }
       }}
@@ -209,13 +210,15 @@ function LinkCard({
           <p className={styles.cardDescription}>{link.description}</p>
         )}
         <p className={styles.cardUrl}>{link.url}</p>
-        <p className={styles.cardDate}>
-          {new Date(link.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-        </p>
       </div>
 
-      {/* Actions */}
-      <div className={styles.cardActions}>
+      {/* Actions & Date */}
+      <div className={styles.cardActions} style={{ marginTop: 'auto' }}>
+        <span className={styles.cardDate} style={{ marginRight: 'auto' }}>
+          {link.createdAt === link.updatedAt
+            ? `Erstellt ${new Date(link.createdAt).toLocaleDateString('de-DE')}`
+            : `Aktualisiert ${new Date(link.updatedAt).toLocaleDateString('de-DE')}`}
+        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -308,8 +311,18 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   // Filter & View state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('viewMode-links') as 'grid' | 'table') || 'grid';
+    }
+    return 'grid';
+  });
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem('viewMode-links', viewMode);
+  }, [viewMode]);
 
   // Progressive loading state
   const INITIAL_DISPLAY_COUNT = 20;
@@ -794,11 +807,15 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                     (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
                   }}
                   onDragLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = link.isPinned ? 'var(--color-muted)' : 'transparent';
+                    (e.currentTarget as HTMLElement).style.background = link.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent';
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    (e.currentTarget as HTMLElement).style.background = link.isPinned ? 'var(--color-muted)' : 'transparent';
+                    (e.currentTarget as HTMLElement).style.background = link.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent';
                     const draggedId = e.dataTransfer.getData('text/plain');
                     if (draggedId && draggedId !== link.id && sortedLinks) {
                       const draggedIndex = sortedLinks.findIndex(l => l.id === draggedId);
@@ -814,11 +831,18 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                   }}
                   style={{
                     borderBottom: '1px solid var(--color-border)',
-                    background: link.isPinned ? 'var(--color-muted)' : 'transparent',
+                    background: link.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent',
+                    borderLeft: link.isPinned ? '3px solid #facc15' : '3px solid transparent',
                     cursor: 'grab',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = link.isPinned ? 'var(--color-muted)' : 'transparent'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = link.isPinned
+                    ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.2) 0%, rgba(250, 204, 21, 0.1) 100%)'
+                    : 'var(--color-muted)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = link.isPinned
+                    ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                    : 'transparent'}
                 >
                   <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
                     ⋮⋮

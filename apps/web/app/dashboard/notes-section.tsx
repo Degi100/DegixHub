@@ -75,17 +75,17 @@ function NoteCard({
 
   return (
     <div
-      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''} ${note.isPinned ? styles.cardPinned : ''}`}
       style={hasCustomColor ? {
         '--custom-category-color': categoryColor,
       } as React.CSSProperties : undefined}
       onMouseEnter={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !note.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
         }
       }}
       onMouseLeave={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !note.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = '';
         }
       }}
@@ -160,13 +160,15 @@ function NoteCard({
             </span>
           ))}
         </div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginTop: 'var(--space-2)' }}>
-          Updated {new Date(note.updatedAt).toLocaleDateString()}
-        </p>
       </div>
 
-      {/* Actions */}
-      <div className={styles.cardActions}>
+      {/* Actions & Date */}
+      <div className={styles.cardActions} style={{ marginTop: 'auto' }}>
+        <span className={styles.cardDate} style={{ marginRight: 'auto' }}>
+          {note.createdAt === note.updatedAt
+            ? `Erstellt ${new Date(note.createdAt).toLocaleDateString('de-DE')}`
+            : `Aktualisiert ${new Date(note.updatedAt).toLocaleDateString('de-DE')}`}
+        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -234,8 +236,18 @@ export function NotesSection({
   // Filter & View state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('viewMode-notes') as 'grid' | 'table') || 'grid';
+    }
+    return 'grid';
+  });
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem('viewMode-notes', viewMode);
+  }, [viewMode]);
 
   // Progressive loading state
   const INITIAL_DISPLAY_COUNT = 20;
@@ -320,10 +332,35 @@ export function NotesSection({
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
-  // Update pin order mutation
+  // Update pin order mutation with optimistic updates
   const utils = trpc.useUtils();
   const updatePinOrderMutation = trpc.notes.updatePinOrder.useMutation({
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      // Cancel outgoing refetches
+      await utils.notes.getAll.cancel();
+
+      // Snapshot previous value
+      const previousNotes = utils.notes.getAll.getData();
+
+      // Optimistically update the cache
+      if (previousNotes) {
+        const updatedNotes = previousNotes.map(note => {
+          const newOrder = newData.items.find(item => item.id === note.id);
+          return newOrder ? { ...note, pinOrder: newOrder.pinOrder } : note;
+        });
+        utils.notes.getAll.setData(undefined, updatedNotes);
+      }
+
+      return { previousNotes };
+    },
+    onError: (_err, _newData, context) => {
+      // Rollback on error
+      if (context?.previousNotes) {
+        utils.notes.getAll.setData(undefined, context.previousNotes);
+      }
+    },
+    onSettled: () => {
+      // Refetch after mutation
       utils.notes.getAll.invalidate();
     },
   });
@@ -634,11 +671,15 @@ export function NotesSection({
                       (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
                     }}
                     onDragLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background = note.isPinned ? 'var(--color-muted)' : 'transparent';
+                      (e.currentTarget as HTMLElement).style.background = note.isPinned
+                        ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                        : 'transparent';
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      (e.currentTarget as HTMLElement).style.background = note.isPinned ? 'var(--color-muted)' : 'transparent';
+                      (e.currentTarget as HTMLElement).style.background = note.isPinned
+                        ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                        : 'transparent';
                       const draggedId = e.dataTransfer.getData('text/plain');
                       if (draggedId && draggedId !== note.id && sortedNotes) {
                         const draggedIndex = sortedNotes.findIndex(n => n.id === draggedId);
@@ -654,11 +695,18 @@ export function NotesSection({
                     }}
                     style={{
                       borderBottom: '1px solid var(--color-border)',
-                      background: note.isPinned ? 'var(--color-muted)' : 'transparent',
+                      background: note.isPinned
+                        ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                        : 'transparent',
+                      borderLeft: note.isPinned ? '3px solid #facc15' : '3px solid transparent',
                       cursor: 'grab',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = note.isPinned ? 'var(--color-muted)' : 'transparent'}
+                    onMouseEnter={(e) => e.currentTarget.style.background = note.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.2) 0%, rgba(250, 204, 21, 0.1) 100%)'
+                      : 'var(--color-muted)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = note.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent'}
                   >
                     <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
                       ⋮⋮

@@ -71,17 +71,17 @@ function CredentialCard({
 
   return (
     <div
-      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''}`}
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''} ${credential.isPinned ? styles.cardPinned : ''}`}
       style={hasCustomColor ? {
         '--custom-category-color': categoryColor,
       } as React.CSSProperties : undefined}
       onMouseEnter={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !credential.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
         }
       }}
       onMouseLeave={(e) => {
-        if (hasCustomColor) {
+        if (hasCustomColor && !credential.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = '';
         }
       }}
@@ -169,13 +169,13 @@ function CredentialCard({
       <div className={`${styles.cardContent} ${styles.credentialContent}`}>
         <h4 className={styles.cardTitle}>{credential.name}</h4>
         <p className={styles.passwordDots}>••••••••</p>
-        <p className={styles.cardDate}>
-          {new Date(credential.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-        </p>
       </div>
 
-      {/* Actions */}
-      <div className={styles.cardActions}>
+      {/* Actions & Date */}
+      <div className={styles.cardActions} style={{ marginTop: 'auto' }}>
+        <span className={styles.cardDate} style={{ marginRight: 'auto' }}>
+          Erstellt {new Date(credential.createdAt).toLocaleDateString('de-DE')}
+        </span>
         <Button
           variant="ghost"
           size="icon"
@@ -263,8 +263,18 @@ export function SimpleCredentialsSection({
   // Filter & View state
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('viewMode-credentials') as 'grid' | 'table') || 'grid';
+    }
+    return 'grid';
+  });
   const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Persist view mode
+  useEffect(() => {
+    localStorage.setItem('viewMode-credentials', viewMode);
+  }, [viewMode]);
 
   // Progressive loading state
   const INITIAL_DISPLAY_COUNT = 20;
@@ -296,10 +306,35 @@ export function SimpleCredentialsSection({
     { enabled: !!editingId }
   );
 
-  // Update pin order mutation
+  // Update pin order mutation with optimistic updates
   const utils = trpc.useUtils();
   const updatePinOrderMutation = trpc.credentials.updatePinOrder.useMutation({
-    onSuccess: () => {
+    onMutate: async (newData) => {
+      // Cancel outgoing refetches
+      await utils.credentials.getAll.cancel();
+
+      // Snapshot previous value
+      const previousCredentials = utils.credentials.getAll.getData();
+
+      // Optimistically update the cache
+      if (previousCredentials) {
+        const updatedCredentials = previousCredentials.map(cred => {
+          const newOrder = newData.items.find(item => item.id === cred.id);
+          return newOrder ? { ...cred, pinOrder: newOrder.pinOrder } : cred;
+        });
+        utils.credentials.getAll.setData(undefined, updatedCredentials);
+      }
+
+      return { previousCredentials };
+    },
+    onError: (_err, _newData, context) => {
+      // Rollback on error
+      if (context?.previousCredentials) {
+        utils.credentials.getAll.setData(undefined, context.previousCredentials);
+      }
+    },
+    onSettled: () => {
+      // Refetch after mutation
       utils.credentials.getAll.invalidate();
     },
   });
@@ -721,11 +756,15 @@ export function SimpleCredentialsSection({
                     (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
                   }}
                   onDragLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent';
+                    (e.currentTarget as HTMLElement).style.background = cred.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent';
                   }}
                   onDrop={(e) => {
                     e.preventDefault();
-                    (e.currentTarget as HTMLElement).style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent';
+                    (e.currentTarget as HTMLElement).style.background = cred.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent';
                     const draggedId = e.dataTransfer.getData('text/plain');
                     if (draggedId && draggedId !== cred.id && sortedCredentials) {
                       const draggedIndex = sortedCredentials.findIndex(c => c.id === draggedId);
@@ -741,11 +780,18 @@ export function SimpleCredentialsSection({
                   }}
                   style={{
                     borderBottom: '1px solid var(--color-border)',
-                    background: cred.isPinned ? 'var(--color-muted)' : 'transparent',
+                    background: cred.isPinned
+                      ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                      : 'transparent',
+                    borderLeft: cred.isPinned ? '3px solid #facc15' : '3px solid transparent',
                     cursor: 'grab',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = cred.isPinned
+                    ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.2) 0%, rgba(250, 204, 21, 0.1) 100%)'
+                    : 'var(--color-muted)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = cred.isPinned
+                    ? 'linear-gradient(90deg, rgba(250, 204, 21, 0.15) 0%, rgba(250, 204, 21, 0.05) 100%)'
+                    : 'transparent'}
                 >
                   <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
                     ⋮⋮

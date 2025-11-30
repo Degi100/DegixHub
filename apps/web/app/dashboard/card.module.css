@@ -4,11 +4,15 @@
 
 .card {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 220px;
   background-color: var(--color-card);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   transition: all var(--transition-base);
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
@@ -214,6 +218,7 @@
 
 /* Card Content */
 .cardContent {
+  flex: 1;
   margin-bottom: var(--space-4);
 }
 
@@ -257,8 +262,9 @@
 .cardDate {
   font-size: var(--text-xs);
   color: var(--color-muted-foreground);
-  opacity: 0.5;
-  margin-top: var(--space-2);
+  opacity: 0.6;
+  margin-top: auto;
+  padding-top: var(--space-2);
 }
 
 /* Card Actions */
@@ -429,11 +435,62 @@
   display: inline-block;
 }
 
-/* Min Heights */
+/* Content flex grow to fill space */
 .linkContent {
-  min-height: 5rem;
+  flex: 1;
 }
 
 .credentialContent {
-  min-height: 3.75rem;
+  flex: 1;
+}
+
+/* Pinned/Favorite Card Styles */
+.cardPinned {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.08) 0%, rgba(250, 204, 21, 0.02) 100%);
+  border-color: rgba(250, 204, 21, 0.4);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.1), var(--shadow-md);
+}
+
+.cardPinned::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #facc15, #fbbf24);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+@media (min-width: 640px) {
+  .cardPinned::before {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}
+
+.cardPinned:hover {
+  border-color: rgba(250, 204, 21, 0.6);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.2), var(--shadow-xl);
+}
+
+/* Dark mode pinned styles */
+.dark .cardPinned {
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.12) 0%, rgba(250, 204, 21, 0.04) 100%);
+  border-color: rgba(250, 204, 21, 0.5);
+}
+
+.dark .cardPinned:hover {
+  border-color: rgba(250, 204, 21, 0.7);
+}
+
+/* Pinned indicator star */
+.pinnedStar {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #facc15;
+  fill: #facc15;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
 }

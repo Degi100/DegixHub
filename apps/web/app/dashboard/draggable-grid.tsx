@@ -25,26 +25,17 @@ export function DraggableGrid<T extends DraggableItem>({
   const dragCounter = useRef(0);
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', id);
-    // Add a slight delay to show the dragging state
-    setTimeout(() => {
-      const element = document.querySelector(`[data-drag-id="${id}"]`);
-      if (element) {
-        element.classList.add('dragging');
-      }
-    }, 0);
+    (e.currentTarget as HTMLElement).style.opacity = '0.5';
+    setDraggedId(id);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).style.opacity = '1';
     setDraggedId(null);
     setDragOverId(null);
     dragCounter.current = 0;
-    // Remove dragging class from all elements
-    document.querySelectorAll('.dragging').forEach((el) => {
-      el.classList.remove('dragging');
-    });
   };
 
   const handleDragEnter = (e: React.DragEvent, id: string) => {
@@ -73,12 +64,16 @@ export function DraggableGrid<T extends DraggableItem>({
     setDragOverId(null);
     dragCounter.current = 0;
 
-    if (!draggedId || draggedId === targetId) {
+    const draggedItemId = e.dataTransfer.getData('text/plain');
+    console.log('[DraggableGrid] drop:', { draggedItemId, targetId });
+
+    if (!draggedItemId || draggedItemId === targetId) {
+      console.log('[DraggableGrid] drop cancelled - same item or no draggedId');
       return;
     }
 
     // Find indices
-    const draggedIndex = items.findIndex((item) => item.id === draggedId);
+    const draggedIndex = items.findIndex((item) => item.id === draggedItemId);
     const targetIndex = items.findIndex((item) => item.id === targetId);
 
     if (draggedIndex === -1 || targetIndex === -1) {
@@ -96,6 +91,7 @@ export function DraggableGrid<T extends DraggableItem>({
       pinOrder: index,
     }));
 
+    console.log('[DraggableGrid] calling onReorder with:', updatedOrders.length, 'items');
     onReorder(updatedOrders);
     setDraggedId(null);
   };
@@ -106,7 +102,7 @@ export function DraggableGrid<T extends DraggableItem>({
         <div
           key={item.id}
           data-drag-id={item.id}
-          draggable
+          draggable="true"
           onDragStart={(e) => handleDragStart(e, item.id)}
           onDragEnd={handleDragEnd}
           onDragEnter={(e) => handleDragEnter(e, item.id)}
@@ -115,15 +111,16 @@ export function DraggableGrid<T extends DraggableItem>({
           onDrop={(e) => handleDrop(e, item.id)}
           style={{
             cursor: 'grab',
-            opacity: draggedId === item.id ? 0.5 : 1,
             transform: dragOverId === item.id ? 'scale(1.02)' : 'scale(1)',
-            transition: 'transform 0.15s ease, opacity 0.15s ease',
+            transition: 'transform 0.15s ease',
             outline: dragOverId === item.id ? '2px dashed var(--color-primary)' : 'none',
             outlineOffset: '2px',
             borderRadius: 'var(--radius-lg)',
           }}
         >
-          {renderItem(item, draggedId === item.id)}
+          <div style={{ pointerEvents: draggedId ? 'none' : 'auto' }}>
+            {renderItem(item, draggedId === item.id)}
+          </div>
         </div>
       ))}
     </div>

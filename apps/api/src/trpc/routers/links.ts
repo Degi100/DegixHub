@@ -125,6 +125,7 @@ export const linksRouter = router({
           description: input.description || null,
           favicon: input.favicon || null,
           linkedCredentialId: input.linkedCredentialId || null,
+          updatedAt: new Date(),
         })
         .where(eq(links.id, input.id));
 

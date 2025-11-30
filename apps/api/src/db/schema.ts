@@ -35,6 +35,9 @@ export const links = sqliteTable('links', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export const credentials = sqliteTable('credentials', {
