@@ -8,6 +8,7 @@ import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
 import { copyToClipboard, copySecureToClipboard } from '@/lib/clipboard';
+import { DraggableGrid } from './draggable-grid';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -19,6 +20,7 @@ interface Link {
   description?: string | null;
   favicon?: string | null;
   isPinned?: boolean | null;
+  pinOrder?: number | null;
   linkedCredentialId?: string | null;
   createdAt: string;
 }
@@ -331,6 +333,18 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   // Fetch metadata mutation
   const fetchMetadataMutation = trpc.links.fetchMetadata.useMutation();
 
+  // Update pin order mutation
+  const utils = trpc.useUtils();
+  const updatePinOrderMutation = trpc.links.updatePinOrder.useMutation({
+    onSuccess: () => {
+      utils.links.getAll.invalidate();
+    },
+  });
+
+  const handleReorderPinned = (items: { id: string; pinOrder: number }[]) => {
+    updatePinOrderMutation.mutate({ items });
+  };
+
   // Query for copying credentials
   const { data: credentialToCopy } = trpc.credentials.getById.useQuery(
     { id: copyingCredentialId! },
@@ -429,18 +443,23 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     ? links?.filter(l => selectedCategories.includes(l.category))
     : links;
 
-  const pinnedLinks = filteredLinks?.filter(l => l.isPinned).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Sort all links by pinOrder (pinned first, then by pinOrder, then by createdAt)
+  const sortedLinks = filteredLinks?.slice().sort((a, b) => {
+    // Pinned items first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // Then by pinOrder
+    const orderA = a.pinOrder ?? 999999;
+    const orderB = b.pinOrder ?? 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    // Then by createdAt
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
-  const unpinnedLinks = filteredLinks?.filter(l => !l.isPinned).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  // Progressive loading: slice unpinned links for display
-  const displayedUnpinnedLinks = unpinnedLinks?.slice(0, displayCount);
-  const hasMoreToLoad = (unpinnedLinks?.length || 0) > displayCount;
-  const remainingCount = (unpinnedLinks?.length || 0) - displayCount;
+  // Progressive loading
+  const displayedLinks = sortedLinks?.slice(0, displayCount);
+  const hasMoreToLoad = (sortedLinks?.length || 0) > displayCount;
+  const remainingCount = (sortedLinks?.length || 0) - displayCount;
 
   // Reset display count when filter changes
   useEffect(() => {
@@ -732,9 +751,12 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
         </div>
       )}
 
-      {/* Table View */}
-      {viewMode === 'table' && filteredLinks && filteredLinks.length > 0 && (
+      {/* Table View - All links are draggable */}
+      {viewMode === 'table' && displayedLinks && displayedLinks.length > 0 && (
         <div style={{ overflowX: 'auto' }}>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag rows to reorder
+          </p>
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
@@ -742,6 +764,7 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
           }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)', width: '30px' }}></th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}></th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Link</th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Beschreibung</th>
@@ -750,17 +773,56 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               </tr>
             </thead>
             <tbody>
-              {/* Pinned links first, then displayed unpinned links */}
-              {[...(pinnedLinks || []), ...(displayedUnpinnedLinks || [])].map((link) => (
+              {displayedLinks.map((link, index) => (
                 <tr
                   key={link.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', link.id);
+                    (e.currentTarget as HTMLElement).style.opacity = '0.5';
+                  }}
+                  onDragEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = '1';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
+                  }}
+                  onDragLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = link.isPinned ? 'var(--color-muted)' : 'transparent';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).style.background = link.isPinned ? 'var(--color-muted)' : 'transparent';
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId && draggedId !== link.id && sortedLinks) {
+                      const draggedIndex = sortedLinks.findIndex(l => l.id === draggedId);
+                      const targetIndex = sortedLinks.findIndex(l => l.id === link.id);
+                      if (draggedIndex !== -1 && targetIndex !== -1) {
+                        const newItems = [...sortedLinks];
+                        const [draggedItem] = newItems.splice(draggedIndex, 1);
+                        newItems.splice(targetIndex, 0, draggedItem);
+                        const updatedOrders = newItems.map((item, idx) => ({ id: item.id, pinOrder: idx }));
+                        handleReorderPinned(updatedOrders);
+                      }
+                    }
+                  }}
                   style={{
                     borderBottom: '1px solid var(--color-border)',
                     background: link.isPinned ? 'var(--color-muted)' : 'transparent',
+                    cursor: 'grab',
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = link.isPinned ? 'var(--color-muted)' : 'transparent'}
                 >
+                  <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
+                    ⋮⋮
+                  </td>
                   <td style={{ padding: 'var(--space-2)' }}>
                     {link.favicon ? (
                       <img src={link.favicon} alt="" style={{ width: '20px', height: '20px', borderRadius: '4px' }} />
@@ -828,17 +890,18 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
         </div>
       )}
 
-      {/* Grid View - Pinned Links */}
-      {viewMode === 'grid' && pinnedLinks && pinnedLinks.length > 0 && (
+      {/* Grid View - All Links Draggable */}
+      {viewMode === 'grid' && displayedLinks && displayedLinks.length > 0 && (
         <div className={dialogStyles.cardSection}>
-          <h3 className={dialogStyles.subsectionTitle}>
-            <Star className={styles.pinIcon} />
-            Pinned ({pinnedLinks.length})
-          </h3>
-          <div className={dialogStyles.grid}>
-            {pinnedLinks.map((link) => (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag cards to reorder
+          </p>
+          <DraggableGrid
+            items={displayedLinks}
+            onReorder={handleReorderPinned}
+            className={dialogStyles.grid}
+            renderItem={(link) => (
               <LinkCard
-                key={link.id}
                 link={link}
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
@@ -850,36 +913,8 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
                 linkedCredentialName={getCredentialName(link.linkedCredentialId)}
                 onCopyCredential={handleCopyCredential}
               />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Grid View - Regular Links */}
-      {viewMode === 'grid' && displayedUnpinnedLinks && displayedUnpinnedLinks.length > 0 && (
-        <div className={dialogStyles.cardSection}>
-          {pinnedLinks && pinnedLinks.length > 0 && (
-            <h3 className={dialogStyles.subsectionTitle}>
-              All Links ({unpinnedLinks?.length || 0})
-            </h3>
-          )}
-          <div className={dialogStyles.grid}>
-            {displayedUnpinnedLinks.map((link) => (
-              <LinkCard
-                key={link.id}
-                link={link}
-                onTogglePin={onTogglePin}
-                onEdit={handleEdit}
-                onDelete={onDeleteLink}
-                onAddNote={onAddNote}
-                categoryColor={colorMap[link.category]}
-                notesCount={notesCountByLinkId[link.id] || 0}
-                linkedNotes={notesByLinkId[link.id] || []}
-                linkedCredentialName={getCredentialName(link.linkedCredentialId)}
-                onCopyCredential={handleCopyCredential}
-              />
-            ))}
-          </div>
+            )}
+          />
           {/* Load More Button */}
           {hasMoreToLoad && (
             <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>

@@ -1,6 +1,6 @@
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse, array, object, pipe, string, minLength } from 'valibot';
+import { parse, array, object, pipe, string, minLength, number } from 'valibot';
 import { LinkCreateSchema, LinkUpdateSchema, LinkDeleteSchema } from '@hub/shared/schemas';
 import { db } from '../../db';
 import { links, linkTags, tags } from '../../db/schema';
@@ -325,5 +325,37 @@ export const linksRouter = router({
       });
 
       return { success: true, isPinned: newPinStatus };
+    }),
+
+  // Update pin order for drag & drop sorting
+  updatePinOrder: protectedProcedure
+    .input((raw) =>
+      parse(
+        object({
+          items: array(object({ id: string(), pinOrder: number() })),
+        }),
+        raw
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership of all links
+      const linkIds = input.items.map((item) => item.id);
+      const userLinks = await db.query.links.findMany({
+        where: and(inArray(links.id, linkIds), eq(links.userId, ctx.user.id)),
+      });
+
+      if (userLinks.length !== linkIds.length) {
+        throw new Error('Some links not found or unauthorized');
+      }
+
+      // Update pin order for each link
+      for (const item of input.items) {
+        await db
+          .update(links)
+          .set({ pinOrder: item.pinOrder })
+          .where(eq(links.id, item.id));
+      }
+
+      return { success: true };
     }),
 });

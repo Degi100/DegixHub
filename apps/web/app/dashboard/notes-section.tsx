@@ -3,7 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, Plus, X, Edit, Trash2, Link as LinkIcon, Key, Filter, Grid, List, StickyNote } from 'lucide-react';
+import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
+import { DraggableGrid } from './draggable-grid';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -13,6 +15,7 @@ interface Note {
   content: string;
   category: string;
   isPinned: boolean | null;
+  pinOrder?: number | null;
   linkedLinkId?: string | null;
   linkedCredentialId?: string | null;
   createdAt: string;
@@ -304,18 +307,35 @@ export function NotesSection({
     return matchesSearch && matchesCategory;
   });
 
-  const pinnedNotes = filteredNotes.filter(n => n.isPinned).sort((a, b) =>
-    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  // Sort all notes by pinOrder (pinned first, then by pinOrder, then by updatedAt)
+  const sortedNotes = filteredNotes.slice().sort((a, b) => {
+    // Pinned items first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // Then by pinOrder
+    const orderA = a.pinOrder ?? 999999;
+    const orderB = b.pinOrder ?? 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    // Then by updatedAt
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  });
 
-  const unpinnedNotes = filteredNotes.filter(n => !n.isPinned).sort((a, b) =>
-    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  // Update pin order mutation
+  const utils = trpc.useUtils();
+  const updatePinOrderMutation = trpc.notes.updatePinOrder.useMutation({
+    onSuccess: () => {
+      utils.notes.getAll.invalidate();
+    },
+  });
 
-  // Progressive loading: slice unpinned notes for display
-  const displayedUnpinnedNotes = unpinnedNotes.slice(0, displayCount);
-  const hasMoreToLoad = unpinnedNotes.length > displayCount;
-  const remainingCount = unpinnedNotes.length - displayCount;
+  const handleReorderPinned = (items: { id: string; pinOrder: number }[]) => {
+    updatePinOrderMutation.mutate({ items });
+  };
+
+  // Progressive loading
+  const displayedNotes = sortedNotes.slice(0, displayCount);
+  const hasMoreToLoad = sortedNotes.length > displayCount;
+  const remainingCount = sortedNotes.length - displayCount;
 
   // Reset display count when filter changes
   useEffect(() => {
@@ -568,9 +588,12 @@ export function NotesSection({
         </div>
       )}
 
-      {/* Table View */}
-      {viewMode === 'table' && filteredNotes.length > 0 && (
+      {/* Table View - All notes are draggable */}
+      {viewMode === 'table' && displayedNotes.length > 0 && (
         <div style={{ overflowX: 'auto' }}>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag rows to reorder
+          </p>
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
@@ -578,6 +601,7 @@ export function NotesSection({
           }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)', width: '30px' }}></th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Titel</th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Inhalt</th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Kategorie</th>
@@ -586,20 +610,59 @@ export function NotesSection({
               </tr>
             </thead>
             <tbody>
-              {/* Pinned notes first, then displayed unpinned notes */}
-              {[...pinnedNotes, ...displayedUnpinnedNotes].map((note) => {
+              {displayedNotes.map((note) => {
                 const linkedLink = links.find(l => l.id === note.linkedLinkId);
                 const linkedCredential = credentials.find(c => c.id === note.linkedCredentialId);
                 return (
                   <tr
                     key={note.id}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', note.id);
+                      (e.currentTarget as HTMLElement).style.opacity = '0.5';
+                    }}
+                    onDragEnd={(e) => {
+                      (e.currentTarget as HTMLElement).style.opacity = '1';
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
+                    }}
+                    onDragLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = note.isPinned ? 'var(--color-muted)' : 'transparent';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).style.background = note.isPinned ? 'var(--color-muted)' : 'transparent';
+                      const draggedId = e.dataTransfer.getData('text/plain');
+                      if (draggedId && draggedId !== note.id && sortedNotes) {
+                        const draggedIndex = sortedNotes.findIndex(n => n.id === draggedId);
+                        const targetIndex = sortedNotes.findIndex(n => n.id === note.id);
+                        if (draggedIndex !== -1 && targetIndex !== -1) {
+                          const newItems = [...sortedNotes];
+                          const [draggedItem] = newItems.splice(draggedIndex, 1);
+                          newItems.splice(targetIndex, 0, draggedItem);
+                          const updatedOrders = newItems.map((item, idx) => ({ id: item.id, pinOrder: idx }));
+                          handleReorderPinned(updatedOrders);
+                        }
+                      }
+                    }}
                     style={{
                       borderBottom: '1px solid var(--color-border)',
                       background: note.isPinned ? 'var(--color-muted)' : 'transparent',
+                      cursor: 'grab',
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = note.isPinned ? 'var(--color-muted)' : 'transparent'}
                   >
+                    <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
+                      ⋮⋮
+                    </td>
                     <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                         <StickyNote style={{ width: '14px', height: '14px', color: 'var(--color-muted-foreground)' }} />
@@ -669,17 +732,18 @@ export function NotesSection({
         </div>
       )}
 
-      {/* Grid View - Pinned Notes */}
-      {viewMode === 'grid' && pinnedNotes.length > 0 && (
+      {/* Grid View - All Notes Draggable */}
+      {viewMode === 'grid' && displayedNotes.length > 0 && (
         <div className={dialogStyles.cardSection}>
-          <h3 className={dialogStyles.subsectionTitle}>
-            <Star className={styles.pinIcon} />
-            Pinned ({pinnedNotes.length})
-          </h3>
-          <div className={dialogStyles.grid}>
-            {pinnedNotes.map((note) => (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag cards to reorder
+          </p>
+          <DraggableGrid
+            items={displayedNotes}
+            onReorder={handleReorderPinned}
+            className={dialogStyles.grid}
+            renderItem={(note) => (
               <NoteCard
-                key={note.id}
                 note={note}
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
@@ -688,51 +752,27 @@ export function NotesSection({
                 credentials={credentials}
                 categoryColor={colorMap[note.category]}
               />
-            ))}
-          </div>
+            )}
+          />
+          {/* Load More Button */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Grid View - All Notes */}
-      {viewMode === 'grid' && (
-        <div className={dialogStyles.cardSection}>
-          <h3 className={dialogStyles.subsectionTitle}>
-            {pinnedNotes.length > 0 ? 'All Notes' : 'Notes'} ({unpinnedNotes.length})
-          </h3>
-          {unpinnedNotes.length === 0 ? (
-            <p style={{ color: 'var(--color-muted-foreground)', padding: 'var(--space-4)' }}>
-              {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
-            </p>
-          ) : (
-            <>
-              <div className={dialogStyles.grid}>
-                {displayedUnpinnedNotes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    onTogglePin={onTogglePin}
-                    onEdit={handleEdit}
-                    onDelete={onDelete}
-                    links={links}
-                    credentials={credentials}
-                    categoryColor={colorMap[note.category]}
-                  />
-                ))}
-              </div>
-              {/* Load More Button */}
-              {hasMoreToLoad && (
-                <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
-                  >
-                    Load More ({remainingCount} remaining)
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      {/* Empty State for Grid View */}
+      {viewMode === 'grid' && sortedNotes.length === 0 && (
+        <p style={{ color: 'var(--color-muted-foreground)', padding: 'var(--space-4)' }}>
+          {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
+        </p>
       )}
     </div>
   );

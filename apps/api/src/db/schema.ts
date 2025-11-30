@@ -30,6 +30,7 @@ export const links = sqliteTable('links', {
   description: text('description'),
   favicon: text('favicon'), // URL to the site's favicon
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
+  pinOrder: integer('pin_order').default(0), // Order for drag & drop sorting of pinned items
   linkedCredentialId: text('linked_credential_id').references(() => credentials.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
@@ -47,6 +48,7 @@ export const credentials = sqliteTable('credentials', {
   iv: text('iv').notNull(),
   authTag: text('auth_tag').notNull(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
+  pinOrder: integer('pin_order').default(0), // Order for drag & drop sorting of pinned items
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),
@@ -91,6 +93,7 @@ export const notes = sqliteTable('notes', {
   content: text('content').notNull(), // Markdown content
   category: text('category').notNull(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
+  pinOrder: integer('pin_order').default(0), // Order for drag & drop sorting of pinned items
   linkedLinkId: text('linked_link_id').references(() => links.id, { onDelete: 'set null' }),
   linkedCredentialId: text('linked_credential_id').references(() => credentials.id, { onDelete: 'set null' }),
   createdAt: integer('created_at', { mode: 'timestamp_ms' })

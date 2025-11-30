@@ -1,6 +1,6 @@
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { generateId } from 'lucia';
-import { parse, array, object, pipe, string, minLength } from 'valibot';
+import { parse, array, object, pipe, string, minLength, number } from 'valibot';
 import {
   CredentialCreateSchema,
   CredentialUpdateSchema,
@@ -371,5 +371,37 @@ export const credentialsRouter = router({
       });
 
       return { success: true, isPinned: newPinStatus };
+    }),
+
+  // Update pin order for drag & drop sorting
+  updatePinOrder: protectedProcedure
+    .input((raw) =>
+      parse(
+        object({
+          items: array(object({ id: string(), pinOrder: number() })),
+        }),
+        raw
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership of all credentials
+      const credentialIds = input.items.map((item) => item.id);
+      const userCredentials = await db.query.credentials.findMany({
+        where: and(inArray(credentials.id, credentialIds), eq(credentials.userId, ctx.user.id)),
+      });
+
+      if (userCredentials.length !== credentialIds.length) {
+        throw new Error('Some credentials not found or unauthorized');
+      }
+
+      // Update pin order for each credential
+      for (const item of input.items) {
+        await db
+          .update(credentials)
+          .set({ pinOrder: item.pinOrder })
+          .where(eq(credentials.id, item.id));
+      }
+
+      return { success: true };
     }),
 });

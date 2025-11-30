@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { eq, and, desc, inArray } from 'drizzle-orm';
-import { parse, object, string, boolean, optional, array } from 'valibot';
+import { parse, object, string, boolean, optional, array, number } from 'valibot';
 import { generateId } from 'lucia';
 import { db } from '../../db';
 import { notes, noteTags, tags } from '../../db/schema';
@@ -291,5 +291,41 @@ export const notesRouter = router({
         .returning();
 
       return updated;
+    }),
+
+  // Update pin order for drag & drop sorting
+  updatePinOrder: protectedProcedure
+    .input((raw) => {
+      const schema = object({
+        items: array(object({ id: string(), pinOrder: number() })),
+      });
+      return parse(schema, raw);
+    })
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      // Verify ownership of all notes
+      const noteIds = input.items.map((item) => item.id);
+      const userNotes = await db
+        .select()
+        .from(notes)
+        .where(and(inArray(notes.id, noteIds), eq(notes.userId, userId)));
+
+      if (userNotes.length !== noteIds.length) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Some notes not found or unauthorized',
+        });
+      }
+
+      // Update pin order for each note
+      for (const item of input.items) {
+        await db
+          .update(notes)
+          .set({ pinOrder: item.pinOrder })
+          .where(eq(notes.id, item.id));
+      }
+
+      return { success: true };
     }),
 });

@@ -9,6 +9,7 @@ import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
 import { copyToClipboard, copySecureToClipboard } from '@/lib/clipboard';
+import { DraggableGrid } from './draggable-grid';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -17,6 +18,7 @@ interface Credential {
   name: string;
   category: string;
   isPinned?: boolean | null;
+  pinOrder?: number | null;
   createdAt: string;
 }
 
@@ -294,6 +296,18 @@ export function SimpleCredentialsSection({
     { enabled: !!editingId }
   );
 
+  // Update pin order mutation
+  const utils = trpc.useUtils();
+  const updatePinOrderMutation = trpc.credentials.updatePinOrder.useMutation({
+    onSuccess: () => {
+      utils.credentials.getAll.invalidate();
+    },
+  });
+
+  const handleReorderPinned = (items: { id: string; pinOrder: number }[]) => {
+    updatePinOrderMutation.mutate({ items });
+  };
+
   const handleCopy = async (text: string) => {
     await copySecureToClipboard(text);
     toast.success('Copied! (clears in 30s)');
@@ -377,18 +391,23 @@ export function SimpleCredentialsSection({
     ? credentials?.filter(c => selectedCategories.includes(c.category))
     : credentials;
 
-  const pinnedCredentials = filteredCredentials?.filter(c => c.isPinned).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Sort all credentials by pinOrder (pinned first, then by pinOrder, then by createdAt)
+  const sortedCredentials = filteredCredentials?.slice().sort((a, b) => {
+    // Pinned items first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // Then by pinOrder
+    const orderA = a.pinOrder ?? 999999;
+    const orderB = b.pinOrder ?? 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    // Then by createdAt
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
-  const unpinnedCredentials = filteredCredentials?.filter(c => !c.isPinned).sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  // Progressive loading: slice unpinned credentials for display
-  const displayedUnpinnedCredentials = unpinnedCredentials?.slice(0, displayCount);
-  const hasMoreToLoad = (unpinnedCredentials?.length || 0) > displayCount;
-  const remainingCount = (unpinnedCredentials?.length || 0) - displayCount;
+  // Progressive loading
+  const displayedCredentials = sortedCredentials?.slice(0, displayCount);
+  const hasMoreToLoad = (sortedCredentials?.length || 0) > displayCount;
+  const remainingCount = (sortedCredentials?.length || 0) - displayCount;
 
   // Reset display count when filter changes
   useEffect(() => {
@@ -661,9 +680,12 @@ export function SimpleCredentialsSection({
         </div>
       )}
 
-      {/* Table View */}
-      {viewMode === 'table' && filteredCredentials && filteredCredentials.length > 0 && (
+      {/* Table View - All credentials are draggable */}
+      {viewMode === 'table' && displayedCredentials && displayedCredentials.length > 0 && (
         <div style={{ overflowX: 'auto' }}>
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag rows to reorder
+          </p>
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
@@ -671,23 +693,63 @@ export function SimpleCredentialsSection({
           }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)', width: '30px' }}></th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Name</th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'left', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Kategorie</th>
                 <th style={{ padding: 'var(--space-3)', textAlign: 'right', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>Aktionen</th>
               </tr>
             </thead>
             <tbody>
-              {/* Pinned credentials first, then displayed unpinned credentials */}
-              {[...(pinnedCredentials || []), ...(displayedUnpinnedCredentials || [])].map((cred) => (
+              {displayedCredentials.map((cred) => (
                 <tr
                   key={cred.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', cred.id);
+                    (e.currentTarget as HTMLElement).style.opacity = '0.5';
+                  }}
+                  onDragEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.opacity = '1';
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).style.background = 'var(--color-primary-light, rgba(59, 130, 246, 0.1))';
+                  }}
+                  onDragLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent';
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    (e.currentTarget as HTMLElement).style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent';
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId && draggedId !== cred.id && sortedCredentials) {
+                      const draggedIndex = sortedCredentials.findIndex(c => c.id === draggedId);
+                      const targetIndex = sortedCredentials.findIndex(c => c.id === cred.id);
+                      if (draggedIndex !== -1 && targetIndex !== -1) {
+                        const newItems = [...sortedCredentials];
+                        const [draggedItem] = newItems.splice(draggedIndex, 1);
+                        newItems.splice(targetIndex, 0, draggedItem);
+                        const updatedOrders = newItems.map((item, idx) => ({ id: item.id, pinOrder: idx }));
+                        handleReorderPinned(updatedOrders);
+                      }
+                    }
+                  }}
                   style={{
                     borderBottom: '1px solid var(--color-border)',
                     background: cred.isPinned ? 'var(--color-muted)' : 'transparent',
+                    cursor: 'grab',
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = 'var(--color-muted)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = cred.isPinned ? 'var(--color-muted)' : 'transparent'}
                 >
+                  <td style={{ padding: 'var(--space-2)', color: 'var(--color-muted-foreground)', cursor: 'grab' }}>
+                    ⋮⋮
+                  </td>
                   <td style={{ padding: 'var(--space-3)', fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <Shield style={{ width: '14px', height: '14px', color: 'var(--color-muted-foreground)' }} />
@@ -739,17 +801,18 @@ export function SimpleCredentialsSection({
         </div>
       )}
 
-      {/* Grid View - Pinned Credentials */}
-      {viewMode === 'grid' && pinnedCredentials && pinnedCredentials.length > 0 && (
+      {/* Grid View - All Credentials Draggable */}
+      {viewMode === 'grid' && displayedCredentials && displayedCredentials.length > 0 && (
         <div className={dialogStyles.cardSection}>
-          <h3 className={dialogStyles.subsectionTitle}>
-            <Star className={styles.pinIcon} />
-            Pinned ({pinnedCredentials.length})
-          </h3>
-          <div className={dialogStyles.grid}>
-            {pinnedCredentials.map((cred) => (
+          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)' }}>
+            Drag cards to reorder
+          </p>
+          <DraggableGrid
+            items={displayedCredentials}
+            onReorder={handleReorderPinned}
+            className={dialogStyles.grid}
+            renderItem={(cred) => (
               <CredentialCard
-                key={cred.id}
                 credential={cred}
                 onTogglePin={onTogglePin}
                 onView={(id) => handleProtectedAction('view', id)}
@@ -760,35 +823,8 @@ export function SimpleCredentialsSection({
                 notesCount={notesCountByCredentialId[cred.id] || 0}
                 linkedNotes={notesByCredentialId[cred.id] || []}
               />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Grid View - Regular Credentials */}
-      {viewMode === 'grid' && displayedUnpinnedCredentials && displayedUnpinnedCredentials.length > 0 && (
-        <div className={dialogStyles.cardSection}>
-          {pinnedCredentials && pinnedCredentials.length > 0 && (
-            <h3 className={dialogStyles.subsectionTitle}>
-              All Credentials ({unpinnedCredentials?.length || 0})
-            </h3>
-          )}
-          <div className={dialogStyles.grid}>
-            {displayedUnpinnedCredentials.map((cred) => (
-              <CredentialCard
-                key={cred.id}
-                credential={cred}
-                onTogglePin={onTogglePin}
-                onView={(id) => handleProtectedAction('view', id)}
-                onEdit={(id) => handleProtectedAction('edit', id)}
-                onDelete={onDeleteCredential}
-                onAddNote={onAddNote}
-                categoryColor={colorMap[cred.category]}
-                notesCount={notesCountByCredentialId[cred.id] || 0}
-                linkedNotes={notesByCredentialId[cred.id] || []}
-              />
-            ))}
-          </div>
+            )}
+          />
           {/* Load More Button */}
           {hasMoreToLoad && (
             <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>

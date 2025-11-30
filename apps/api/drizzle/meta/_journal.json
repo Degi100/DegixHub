@@ -50,6 +50,13 @@
       "when": 1764112822363,
       "tag": "0006_add_link_credential_linking",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1764113822363,
+      "tag": "0007_add_pin_order",
+      "breakpoints": true
     }
   ]
 }
