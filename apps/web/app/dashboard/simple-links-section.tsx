@@ -7,7 +7,7 @@ import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
-import { copyToClipboard } from '@/lib/clipboard';
+import { copyToClipboard, copySecureToClipboard } from '@/lib/clipboard';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -309,6 +309,11 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Progressive loading state
+  const INITIAL_DISPLAY_COUNT = 20;
+  const LOAD_MORE_COUNT = 20;
+  const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
+
   // Close filter dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -332,10 +337,10 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     { enabled: !!copyingCredentialId }
   );
 
-  // Copy credential to clipboard when data is fetched
+  // Copy credential to clipboard when data is fetched (with auto-clear)
   if (credentialToCopy && copyingCredentialId) {
-    copyToClipboard(credentialToCopy.data);
-    import('sonner').then(({ toast }) => toast.success('Credential copied!'));
+    copySecureToClipboard(credentialToCopy.data);
+    import('sonner').then(({ toast }) => toast.success('Credential copied! (clears in 30s)'));
     setCopyingCredentialId(null);
   }
 
@@ -402,7 +407,17 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
             favicon: metadata.favicon || '',
           }));
         } catch (e) {
-          // Ignore fetch errors
+          // Try fallback favicon from Google
+          try {
+            const urlObj = new URL(url);
+            const fallbackFavicon = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=32`;
+            setFormData(prev => ({
+              ...prev,
+              favicon: prev.favicon || fallbackFavicon,
+            }));
+          } catch {
+            // Ignore URL parse errors
+          }
         }
         setIsFetchingMeta(false);
       }, 800);
@@ -422,6 +437,16 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Progressive loading: slice unpinned links for display
+  const displayedUnpinnedLinks = unpinnedLinks?.slice(0, displayCount);
+  const hasMoreToLoad = (unpinnedLinks?.length || 0) > displayCount;
+  const remainingCount = (unpinnedLinks?.length || 0) - displayCount;
+
+  // Reset display count when filter changes
+  useEffect(() => {
+    setDisplayCount(INITIAL_DISPLAY_COUNT);
+  }, [selectedCategories]);
+
   // Get unique categories from links
   const usedCategories = [...new Set(links?.map(l => l.category) || [])];
 
@@ -436,6 +461,20 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for duplicate URL (only for new links)
+    if (!editingLink) {
+      const normalizedUrl = formData.url.toLowerCase().replace(/\/$/, '');
+      const duplicate = links?.find(link =>
+        link.url.toLowerCase().replace(/\/$/, '') === normalizedUrl
+      );
+      if (duplicate) {
+        import('sonner').then(({ toast }) =>
+          toast.warning(`Link with similar URL already exists: "${duplicate.name}"`)
+        );
+        return;
+      }
+    }
 
     if (editingLink) {
       onUpdateLink({ id: editingLink, ...formData });
@@ -711,11 +750,8 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               </tr>
             </thead>
             <tbody>
-              {[...filteredLinks].sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              }).map((link) => (
+              {/* Pinned links first, then displayed unpinned links */}
+              {[...(pinnedLinks || []), ...(displayedUnpinnedLinks || [])].map((link) => (
                 <tr
                   key={link.id}
                   style={{
@@ -778,6 +814,17 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               ))}
             </tbody>
           </table>
+          {/* Load More Button for Table View */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -809,15 +856,15 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
       )}
 
       {/* Grid View - Regular Links */}
-      {viewMode === 'grid' && unpinnedLinks && unpinnedLinks.length > 0 && (
+      {viewMode === 'grid' && displayedUnpinnedLinks && displayedUnpinnedLinks.length > 0 && (
         <div className={dialogStyles.cardSection}>
           {pinnedLinks && pinnedLinks.length > 0 && (
             <h3 className={dialogStyles.subsectionTitle}>
-              All Links ({unpinnedLinks.length})
+              All Links ({unpinnedLinks?.length || 0})
             </h3>
           )}
           <div className={dialogStyles.grid}>
-            {unpinnedLinks.map((link) => (
+            {displayedUnpinnedLinks.map((link) => (
               <LinkCard
                 key={link.id}
                 link={link}
@@ -833,6 +880,17 @@ export function SimpleLinksSection({ links, onDeleteLink, onTogglePin, onCreateL
               />
             ))}
           </div>
+          {/* Load More Button */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

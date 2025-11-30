@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
-import { copyToClipboard } from '@/lib/clipboard';
+import { copySecureToClipboard } from '@/lib/clipboard';
 import styles from './command-palette.module.css';
 
 interface Tag {
@@ -158,10 +158,10 @@ export function CommandPalette({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, results, selectedIndex]);
 
-  // Copy credential when data is fetched
+  // Copy credential when data is fetched (with auto-clear after 30s)
   useEffect(() => {
     if (viewedCredential && viewingCredentialId) {
-      copyToClipboard(viewedCredential.data);
+      copySecureToClipboard(viewedCredential.data);
       setCopiedId(viewingCredentialId);
       setTimeout(() => setCopiedId(null), 2000);
       setViewingCredentialId(null);

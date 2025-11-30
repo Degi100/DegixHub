@@ -8,7 +8,7 @@ import { trpc } from '@/lib/trpc/react';
 import { CategorySelect } from './category-select';
 import { PinModal } from './pin-modal';
 import { usePinContext } from './pin-context';
-import { copyToClipboard } from '@/lib/clipboard';
+import { copyToClipboard, copySecureToClipboard } from '@/lib/clipboard';
 import styles from './card.module.css';
 import dialogStyles from './dialog.module.css';
 
@@ -264,6 +264,11 @@ export function SimpleCredentialsSection({
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Progressive loading state
+  const INITIAL_DISPLAY_COUNT = 20;
+  const LOAD_MORE_COUNT = 20;
+  const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
+
   // Close filter dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -290,8 +295,8 @@ export function SimpleCredentialsSection({
   );
 
   const handleCopy = async (text: string) => {
-    await copyToClipboard(text);
-    toast.success('Copied to clipboard');
+    await copySecureToClipboard(text);
+    toast.success('Copied! (clears in 30s)');
   };
 
   // Password generator
@@ -380,6 +385,16 @@ export function SimpleCredentialsSection({
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Progressive loading: slice unpinned credentials for display
+  const displayedUnpinnedCredentials = unpinnedCredentials?.slice(0, displayCount);
+  const hasMoreToLoad = (unpinnedCredentials?.length || 0) > displayCount;
+  const remainingCount = (unpinnedCredentials?.length || 0) - displayCount;
+
+  // Reset display count when filter changes
+  useEffect(() => {
+    setDisplayCount(INITIAL_DISPLAY_COUNT);
+  }, [selectedCategories]);
+
   // Get unique categories from credentials
   const usedCategories = [...new Set(credentials?.map(c => c.category) || [])];
 
@@ -394,6 +409,19 @@ export function SimpleCredentialsSection({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check for duplicate name (only for new credentials)
+    if (!editingId) {
+      const normalizedName = formData.name.toLowerCase().trim();
+      const duplicate = credentials?.find(cred =>
+        cred.name.toLowerCase().trim() === normalizedName
+      );
+      if (duplicate) {
+        toast.warning(`Credential with name "${duplicate.name}" already exists`);
+        return;
+      }
+    }
+
     if (editingId) {
       onUpdateCredential({ id: editingId, ...formData });
       setEditingId(null);
@@ -649,11 +677,8 @@ export function SimpleCredentialsSection({
               </tr>
             </thead>
             <tbody>
-              {[...filteredCredentials].sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-              }).map((cred) => (
+              {/* Pinned credentials first, then displayed unpinned credentials */}
+              {[...(pinnedCredentials || []), ...(displayedUnpinnedCredentials || [])].map((cred) => (
                 <tr
                   key={cred.id}
                   style={{
@@ -700,6 +725,17 @@ export function SimpleCredentialsSection({
               ))}
             </tbody>
           </table>
+          {/* Load More Button for Table View */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -730,15 +766,15 @@ export function SimpleCredentialsSection({
       )}
 
       {/* Grid View - Regular Credentials */}
-      {viewMode === 'grid' && unpinnedCredentials && unpinnedCredentials.length > 0 && (
+      {viewMode === 'grid' && displayedUnpinnedCredentials && displayedUnpinnedCredentials.length > 0 && (
         <div className={dialogStyles.cardSection}>
           {pinnedCredentials && pinnedCredentials.length > 0 && (
             <h3 className={dialogStyles.subsectionTitle}>
-              All Credentials ({unpinnedCredentials.length})
+              All Credentials ({unpinnedCredentials?.length || 0})
             </h3>
           )}
           <div className={dialogStyles.grid}>
-            {unpinnedCredentials.map((cred) => (
+            {displayedUnpinnedCredentials.map((cred) => (
               <CredentialCard
                 key={cred.id}
                 credential={cred}
@@ -753,6 +789,17 @@ export function SimpleCredentialsSection({
               />
             ))}
           </div>
+          {/* Load More Button */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

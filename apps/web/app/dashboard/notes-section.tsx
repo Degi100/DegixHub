@@ -234,6 +234,11 @@ export function NotesSection({
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Progressive loading state
+  const INITIAL_DISPLAY_COUNT = 20;
+  const LOAD_MORE_COUNT = 20;
+  const [displayCount, setDisplayCount] = useState(INITIAL_DISPLAY_COUNT);
+
   // Close filter dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -306,6 +311,16 @@ export function NotesSection({
   const unpinnedNotes = filteredNotes.filter(n => !n.isPinned).sort((a, b) =>
     new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
+
+  // Progressive loading: slice unpinned notes for display
+  const displayedUnpinnedNotes = unpinnedNotes.slice(0, displayCount);
+  const hasMoreToLoad = unpinnedNotes.length > displayCount;
+  const remainingCount = unpinnedNotes.length - displayCount;
+
+  // Reset display count when filter changes
+  useEffect(() => {
+    setDisplayCount(INITIAL_DISPLAY_COUNT);
+  }, [selectedCategories, searchQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -571,11 +586,8 @@ export function NotesSection({
               </tr>
             </thead>
             <tbody>
-              {[...filteredNotes].sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-              }).map((note) => {
+              {/* Pinned notes first, then displayed unpinned notes */}
+              {[...pinnedNotes, ...displayedUnpinnedNotes].map((note) => {
                 const linkedLink = links.find(l => l.id === note.linkedLinkId);
                 const linkedCredential = credentials.find(c => c.id === note.linkedCredentialId);
                 return (
@@ -643,6 +655,17 @@ export function NotesSection({
               })}
             </tbody>
           </table>
+          {/* Load More Button for Table View */}
+          {hasMoreToLoad && (
+            <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+              <Button
+                variant="outline"
+                onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+              >
+                Load More ({remainingCount} remaining)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -681,20 +704,33 @@ export function NotesSection({
               {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
             </p>
           ) : (
-            <div className={dialogStyles.grid}>
-              {unpinnedNotes.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  onTogglePin={onTogglePin}
-                  onEdit={handleEdit}
-                  onDelete={onDelete}
-                  links={links}
-                  credentials={credentials}
-                  categoryColor={colorMap[note.category]}
-                />
-              ))}
-            </div>
+            <>
+              <div className={dialogStyles.grid}>
+                {displayedUnpinnedNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    onTogglePin={onTogglePin}
+                    onEdit={handleEdit}
+                    onDelete={onDelete}
+                    links={links}
+                    credentials={credentials}
+                    categoryColor={colorMap[note.category]}
+                  />
+                ))}
+              </div>
+              {/* Load More Button */}
+              {hasMoreToLoad && (
+                <div style={{ textAlign: 'center', marginTop: 'var(--space-4)' }}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDisplayCount(prev => prev + LOAD_MORE_COUNT)}
+                  >
+                    Load More ({remainingCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
