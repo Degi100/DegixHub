@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Trash2, X, Edit, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { Star, ExternalLink, Trash2, Edit, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { copyToClipboard } from '@/lib/clipboard';
+import { ViewNoteModal } from '../dialogs';
 import styles from './card.module.css';
-import dialogStyles from '../dialogs/dialog.module.css';
 
 export interface Link {
   id: string;
@@ -150,24 +150,17 @@ export function LinkCard({
       )}
 
       {/* Note Preview Modal */}
-      {previewNote && (
-        <div className={dialogStyles.overlay} onClick={() => setPreviewNote(null)}>
-          <div className={dialogStyles.dialog} onClick={(e) => e.stopPropagation()}>
-            <div className={dialogStyles.dialogHeader}>
-              <h3 className={dialogStyles.dialogTitle}>
-                <StickyNote style={{ width: '1.25rem', height: '1.25rem', color: '#8b5cf6', marginRight: '0.5rem' }} />
-                {previewNote.title}
-              </h3>
-              <button onClick={() => setPreviewNote(null)} className={dialogStyles.closeButton}>
-                <X style={{ width: '1rem', height: '1rem' }} />
-              </button>
-            </div>
-            <div style={{ padding: 'var(--space-4)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-              {previewNote.content}
-            </div>
-          </div>
-        </div>
-      )}
+      <ViewNoteModal
+        note={previewNote ? {
+          id: previewNote.id,
+          title: previewNote.title,
+          content: previewNote.content,
+          category: 'Note',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } : null}
+        onClose={() => setPreviewNote(null)}
+      />
 
       {/* Content */}
       <div className={`${styles.cardContent} ${styles.linkContent}`}>
