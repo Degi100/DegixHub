@@ -41,3 +41,7 @@ local.db*
 *.tsbuildinfo
 next-env.d.ts
 nul
+
+# Claude Code
+CLAUDE.md
+claude.md
