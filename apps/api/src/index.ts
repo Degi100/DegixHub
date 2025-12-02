@@ -8,6 +8,26 @@ import { initDatabase } from './db/init';
 
 const app = new Hono();
 
+// Simple request logger
+app.use('*', async (c, next) => {
+  const start = Date.now();
+  await next();
+  const ms = Date.now() - start;
+
+  // Skip health checks and static assets
+  const path = c.req.path;
+  if (path === '/' || path.includes('.')) return;
+
+  // Format tRPC calls nicely
+  if (path.startsWith('/trpc/')) {
+    const procedure = path.replace('/trpc/', '');
+    const icon = c.req.method === 'GET' ? '📥' : '📤';
+    console.log(`${icon} ${procedure} (${ms}ms)`);
+  } else {
+    console.log(`${c.req.method} ${path} (${ms}ms)`);
+  }
+});
+
 // Initialize database on startup
 await initDatabase().catch(console.error);
 

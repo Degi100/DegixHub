@@ -8,5 +8,5 @@ const client = createClient({
 
 export const db = drizzle(client, {
   schema,
-  logger: true, // Enable SQL logging
+  logger: false,
 });
