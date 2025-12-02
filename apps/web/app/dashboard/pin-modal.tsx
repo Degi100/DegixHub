@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
 import { toast } from 'sonner';
+import { PinRecoveryOptions } from './pin-recovery-options';
+import { PinRecoveryKeyInput } from './pin-recovery-key-input';
 import styles from './pin-modal.module.css';
 
 interface PinModalProps {
@@ -365,65 +367,26 @@ export function PinModal({ isOpen, onClose, onSuccess, mode }: PinModalProps) {
 
           {/* Recovery Options View */}
           {mode === 'change' && showRecoveryOptions && (
-            <div className={styles.recoveryOptions}>
-              <button
-                className={styles.recoveryButton}
-                onClick={() => {
-                  onClose();
-                  // Trigger recovery mode - parent should open modal with mode='recovery'
-                  window.dispatchEvent(new CustomEvent('open-pin-recovery'));
-                }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-                </svg>
-                <span>Mit Sicherheitscode zurücksetzen</span>
-              </button>
-              <button className={styles.recoveryButtonDisabled} disabled>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-                <span>Per E-Mail zurücksetzen (bald verfügbar)</span>
-              </button>
-              <button
-                className={styles.backButton}
-                onClick={() => setShowRecoveryOptions(false)}
-              >
-                Zurück
-              </button>
-            </div>
+            <PinRecoveryOptions
+              onRecoveryKeySelect={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent('open-pin-recovery'));
+              }}
+              onBack={() => setShowRecoveryOptions(false)}
+            />
           )}
 
           {/* Recovery Key Input */}
           {mode === 'recovery' && step === 'recovery-key' && (
-            <div className={styles.recoveryKeyContainer}>
-              <input
-                type="text"
-                value={recoveryKey}
-                onChange={(e) => {
-                  setRecoveryKey(e.target.value);
-                  setError('');
-                }}
-                placeholder="Sicherheitscode eingeben..."
-                className={styles.recoveryKeyInput}
-                autoFocus
-              />
-              <button
-                className={styles.submitButton}
-                onClick={handleRecoveryKeySubmit}
-                disabled={!recoveryKey.trim() || verifyRecoveryKeyMutation.isPending}
-              >
-                {verifyRecoveryKeyMutation.isPending ? (
-                  <span className={styles.buttonContent}>
-                    <span className={styles.buttonSpinner}></span>
-                    Überprüfe...
-                  </span>
-                ) : (
-                  'Weiter'
-                )}
-              </button>
-            </div>
+            <PinRecoveryKeyInput
+              value={recoveryKey}
+              onChange={(value) => {
+                setRecoveryKey(value);
+                setError('');
+              }}
+              onSubmit={handleRecoveryKeySubmit}
+              isLoading={verifyRecoveryKeyMutation.isPending}
+            />
           )}
 
           {/* PIN Input */}

@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/react';
 import { Sidebar } from '@/components/sidebar';
 import { CommandPalette } from './command-palette';
-import { SimpleLinksSection } from './simple-links-section';
-import { SimpleCredentialsSection } from './simple-credentials-section';
+import { LinksSection } from './links-section';
+import { CredentialsSection } from './credentials-section';
 import { NotesSection } from './notes-section';
 import { ActivityLog } from './activity-log';
 import { DataManagement } from './data-management';
@@ -254,7 +254,7 @@ export default function DashboardPage() {
           <div className={styles.content}>
             {/* Content Sections */}
             {activeSection === 'links' && (
-              <SimpleLinksSection
+              <LinksSection
                 links={links?.filter((link) => {
                   if (!searchQuery) return true;
                   const query = searchQuery.toLowerCase();
@@ -281,7 +281,7 @@ export default function DashboardPage() {
             )}
 
             {activeSection === 'credentials' && (
-              <SimpleCredentialsSection
+              <CredentialsSection
                 credentials={credentials?.filter((cred) => {
                   if (!searchQuery) return true;
                   const query = searchQuery.toLowerCase();
