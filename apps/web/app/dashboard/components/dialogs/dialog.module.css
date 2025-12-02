@@ -191,11 +191,26 @@
 }
 
 /* ==========================================
-   View Modal (Credentials)
+   View Modal (Credentials/Notes)
    ========================================== */
 
 .viewModal {
-  max-width: 42rem;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .viewModal {
+    max-width: 36rem;
+    max-height: 80vh;
+  }
+}
+
+@media (min-width: 768px) {
+  .viewModal {
+    max-width: 42rem;
+  }
 }
 
 .viewHeader {

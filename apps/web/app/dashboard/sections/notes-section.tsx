@@ -7,9 +7,10 @@ import { trpc } from '@/lib/trpc/react';
 import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters } from '../components/ui';
 import { NoteCard } from '../components/cards';
 import type { Note, LinkedLink, LinkedCredential } from '../components/cards';
-import { NoteFormDialog } from '../components/dialogs';
+import { NoteFormDialog, ViewNoteModal } from '../components/dialogs';
 import { useViewMode } from '../hooks';
 import dialogStyles from '../components/dialogs/dialog.module.css';
+import type { Note as NoteType } from '../components/cards';
 
 interface Props {
   notes: Note[];
@@ -52,6 +53,7 @@ export function NotesSection({
 }: Props) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [viewingNote, setViewingNote] = useState<NoteType | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -352,6 +354,7 @@ export function NotesSection({
                 onTogglePin={onTogglePin}
                 onEdit={handleEdit}
                 onDelete={onDelete}
+                onView={setViewingNote}
                 links={links}
                 credentials={credentials}
                 categoryColor={colorMap[note.category]}
@@ -375,6 +378,14 @@ export function NotesSection({
           {searchQuery ? 'No notes found' : 'No notes yet. Create your first note!'}
         </p>
       )}
+
+      {/* View Note Modal */}
+      <ViewNoteModal
+        note={viewingNote}
+        linkedLink={viewingNote?.linkedLinkId ? links.find(l => l.id === viewingNote.linkedLinkId) : null}
+        linkedCredential={viewingNote?.linkedCredentialId ? credentials.find(c => c.id === viewingNote.linkedCredentialId) : null}
+        onClose={() => setViewingNote(null)}
+      />
     </div>
   );
 }

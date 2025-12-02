@@ -38,6 +38,7 @@ interface NoteCardProps {
   onTogglePin: (id: string) => void;
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
+  onView?: (note: Note) => void;
   links: LinkedLink[];
   credentials: LinkedCredential[];
   categoryColor?: string;
@@ -48,6 +49,7 @@ export function NoteCard({
   onTogglePin,
   onEdit,
   onDelete,
+  onView,
   links,
   credentials,
   categoryColor,
@@ -92,7 +94,26 @@ export function NoteCard({
       <div className={styles.cardContent}>
         <h4 className={styles.cardTitle}>{note.title}</h4>
         <p className={styles.cardDescription}>
-          {note.content.slice(0, 150)}{note.content.length > 150 ? '...' : ''}
+          {note.content.slice(0, 100)}
+          {note.content.length > 100 && (
+            <>
+              ...{' '}
+              <button
+                onClick={() => onView?.(note)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-primary)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontSize: 'inherit',
+                  textDecoration: 'underline',
+                }}
+              >
+                Read more
+              </button>
+            </>
+          )}
         </p>
         <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap', alignItems: 'center' }}>
           {linkedLink && (

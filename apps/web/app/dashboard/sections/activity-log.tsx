@@ -24,6 +24,7 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
     if (action === 'updated') return '~';
     if (action === 'deleted') return '-';
     if (action === 'viewed') return '>';
+    if (action === 'copied') return '⎘';
     if (action === 'pinned') return '★';
     if (action === 'unpinned') return '☆';
     return '•';
@@ -34,6 +35,7 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
     if (action === 'updated') return styles['actionSymbol--updated'];
     if (action === 'deleted') return styles['actionSymbol--deleted'];
     if (action === 'viewed') return styles['actionSymbol--viewed'];
+    if (action === 'copied') return styles['actionSymbol--copied'];
     if (action === 'pinned') return styles['actionSymbol--pinned'];
     if (action === 'unpinned') return styles['actionSymbol--unpinned'];
     return styles['actionSymbol--default'];
@@ -42,6 +44,7 @@ export function ActivityLog({ limit = 20, onNavigateToSection }: ActivityLogProp
   const getResourceTypeSymbol = (resourceType: string) => {
     if (resourceType === 'credential') return 'cred';
     if (resourceType === 'link') return 'link';
+    if (resourceType === 'note') return 'note';
     if (resourceType === 'tag') return 'tag';
     return 'item';
   };

@@ -375,6 +375,32 @@ export const credentialsRouter = router({
       return { success: true, isPinned: newPinStatus };
     }),
 
+  // Log when credential data is copied to clipboard
+  logCopied: protectedProcedure
+    .input((raw) => parse(object({ id: string(), field: string() }), raw))
+    .mutation(async ({ ctx, input }) => {
+      // Verify ownership
+      const credential = await db.query.credentials.findFirst({
+        where: and(eq(credentials.id, input.id), eq(credentials.userId, ctx.user.id)),
+      });
+
+      if (!credential) {
+        throw new Error('Credential not found');
+      }
+
+      // Log activity
+      await logActivity({
+        userId: ctx.user.id,
+        action: 'copied',
+        resourceType: 'credential',
+        resourceId: input.id,
+        resourceName: credential.name,
+        metadata: { field: input.field },
+      });
+
+      return { success: true };
+    }),
+
   // Update pin order for drag & drop sorting
   updatePinOrder: protectedProcedure
     .input((raw) =>

@@ -181,6 +181,10 @@
   opacity: 0.4;
 }
 
+.actionSymbol--copied {
+  color: rgb(var(--category-social));
+}
+
 .actionSymbol--pinned {
   color: rgb(var(--category-documentation));
 }

@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { X, Copy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { copySecureToClipboard } from '@/lib/clipboard';
+import { trpc } from '@/lib/trpc/react';
 import styles from '../cards/card.module.css';
 import dialogStyles from './dialog.module.css';
 
 interface ViewCredentialModalProps {
   credential: {
+    id: string;
     name: string;
     category: string;
     data: string;
@@ -17,11 +19,16 @@ interface ViewCredentialModalProps {
 }
 
 export function ViewCredentialModal({ credential, onClose }: ViewCredentialModalProps) {
+  const logCopiedMutation = trpc.credentials.logCopied.useMutation();
+
   if (!credential) return null;
 
   const handleCopy = async () => {
     await copySecureToClipboard(credential.data);
     toast.success('Copied! (clears in 30s)');
+
+    // Log the copy action
+    logCopiedMutation.mutate({ id: credential.id, field: 'data' });
   };
 
   return (
