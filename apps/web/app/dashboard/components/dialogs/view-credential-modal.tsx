@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { X, Copy, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { copySecureToClipboard } from '@/lib/clipboard';
-import styles from './card.module.css';
+import styles from '../cards/card.module.css';
 import dialogStyles from './dialog.module.css';
 
 interface ViewCredentialModalProps {

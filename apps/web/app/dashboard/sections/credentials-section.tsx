@@ -5,16 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Star, Eye, Trash2, Plus, Edit, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
-import { PinModal } from './pin-modal';
-import { DraggableGrid } from './draggable-grid';
-import { DraggableTable } from './draggable-table';
-import { ViewToggle } from './view-toggle';
-import { CategoryFilter, ActiveFilters } from './category-filter';
-import { CredentialCard, Credential, LinkedNote } from './credential-card';
-import { useViewMode, useCategoryFilter, usePinProtection } from './hooks';
-import { CredentialFormDialog } from './credential-form-dialog';
-import { ViewCredentialModal } from './view-credential-modal';
-import dialogStyles from './dialog.module.css';
+import { PinModal } from '../components/pin';
+import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters } from '../components/ui';
+import { CredentialCard } from '../components/cards';
+import type { Credential, CredentialLinkedNote as LinkedNote } from '../components/cards';
+import { CredentialFormDialog, ViewCredentialModal } from '../components/dialogs';
+import { useViewMode, useCategoryFilter, usePinProtection } from '../hooks';
+import dialogStyles from '../components/dialogs/dialog.module.css';
 
 interface CredentialsSectionProps {
   credentials: Credential[] | undefined;

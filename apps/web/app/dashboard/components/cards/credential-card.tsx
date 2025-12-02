@@ -2,23 +2,17 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ExternalLink, Trash2, X, Edit, Copy, Check, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
-import { copyToClipboard } from '@/lib/clipboard';
+import { Star, Eye, Trash2, X, Edit, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import styles from './card.module.css';
-import dialogStyles from './dialog.module.css';
+import dialogStyles from '../dialogs/dialog.module.css';
 
-export interface Link {
+export interface Credential {
   id: string;
   name: string;
-  url: string;
   category: string;
-  description?: string | null;
-  favicon?: string | null;
   isPinned?: boolean | null;
   pinOrder?: number | null;
-  linkedCredentialId?: string | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface LinkedNote {
@@ -27,56 +21,47 @@ export interface LinkedNote {
   content: string;
 }
 
-interface LinkCardProps {
-  link: Link;
+interface CredentialCardProps {
+  credential: Credential;
   onTogglePin: (id: string) => void;
-  onEdit: (link: Link) => void;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onAddNote?: (linkId: string) => void;
+  onAddNote?: (credentialId: string) => void;
   categoryColor?: string;
   notesCount?: number;
   linkedNotes?: LinkedNote[];
-  linkedCredentialName?: string;
-  onCopyCredential?: (credentialId: string) => void;
 }
 
-export function LinkCard({
-  link,
+export function CredentialCard({
+  credential,
   onTogglePin,
+  onView,
   onEdit,
   onDelete,
   onAddNote,
   categoryColor,
   notesCount = 0,
   linkedNotes = [],
-  linkedCredentialName,
-  onCopyCredential,
-}: LinkCardProps) {
-  const [copied, setCopied] = useState(false);
+}: CredentialCardProps) {
   const [showNotes, setShowNotes] = useState(false);
   const [previewNote, setPreviewNote] = useState<LinkedNote | null>(null);
-  const categoryClass = link.category.toLowerCase();
+  const categoryClass = credential.category.toLowerCase();
   const hasCustomColor = categoryColor && !styles[`card--${categoryClass}`];
-
-  const handleCopyUrl = async () => {
-    await copyToClipboard(link.url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div
-      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''} ${link.isPinned ? styles.cardPinned : ''}`}
+      className={`${styles.card} ${!hasCustomColor ? styles[`card--${categoryClass}`] : ''} ${credential.isPinned ? styles.cardPinned : ''}`}
       style={hasCustomColor ? {
         '--custom-category-color': categoryColor,
       } as React.CSSProperties : undefined}
       onMouseEnter={(e) => {
-        if (hasCustomColor && !link.isPinned) {
+        if (hasCustomColor && !credential.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = `${categoryColor}80`;
         }
       }}
       onMouseLeave={(e) => {
-        if (hasCustomColor && !link.isPinned) {
+        if (hasCustomColor && !credential.isPinned) {
           (e.currentTarget as HTMLElement).style.borderColor = '';
         }
       }}
@@ -91,25 +76,12 @@ export function LinkCard({
             borderColor: `${categoryColor}40`,
           } : undefined}
         >
-          {link.category}
+          {credential.category}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-          {linkedCredentialName && (
-            <button
-              onClick={() => link.linkedCredentialId && onCopyCredential?.(link.linkedCredentialId)}
-              className={styles.credentialBadge}
-              title={`Copy credential: ${linkedCredentialName}`}
-            >
-              <Shield style={{ width: '0.75rem', height: '0.75rem' }} />
-              <span style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {linkedCredentialName}
-              </span>
-            </button>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
           {notesCount > 0 && (
             <button
               onClick={() => setShowNotes(!showNotes)}
-              className={styles.notesBadge}
               style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
               title={`${notesCount} Note${notesCount > 1 ? 's' : ''} - Click to ${showNotes ? 'hide' : 'show'}`}
             >
@@ -124,6 +96,10 @@ export function LinkCard({
               </span>
             </button>
           )}
+          <div className={styles.securityBadge}>
+            <Shield />
+            <span>AES-256</span>
+          </div>
         </div>
       </div>
 
@@ -170,61 +146,42 @@ export function LinkCard({
       )}
 
       {/* Content */}
-      <div className={`${styles.cardContent} ${styles.linkContent}`}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {link.favicon && (
-            <img
-              src={link.favicon}
-              alt=""
-              style={{ width: '1rem', height: '1rem', borderRadius: '2px', flexShrink: 0 }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          )}
-          <h4 className={styles.cardTitle}>{link.name}</h4>
-        </div>
-        {link.description && (
-          <p className={styles.cardDescription}>{link.description}</p>
-        )}
-        <p className={styles.cardUrl}>{link.url}</p>
+      <div className={`${styles.cardContent} ${styles.credentialContent}`}>
+        <h4 className={styles.cardTitle}>{credential.name}</h4>
+        <p className={styles.passwordDots}>••••••••</p>
       </div>
 
       {/* Actions & Date */}
       <div className={styles.cardActions} style={{ marginTop: 'auto' }}>
         <span className={styles.cardDate} style={{ marginRight: 'auto' }}>
-          {link.createdAt === link.updatedAt
-            ? `Erstellt ${new Date(link.createdAt).toLocaleDateString('de-DE')}`
-            : `Aktualisiert ${new Date(link.updatedAt).toLocaleDateString('de-DE')}`}
+          Erstellt {new Date(credential.createdAt).toLocaleDateString('de-DE')}
         </span>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onTogglePin(link.id)}
-          title={link.isPinned ? 'Unpin' : 'Pin'}
+          onClick={() => onTogglePin(credential.id)}
+          title={credential.isPinned ? 'Unpin' : 'Pin'}
         >
           <Star style={{
             width: '1rem',
             height: '1rem',
-            fill: link.isPinned ? '#facc15' : 'none',
-            color: link.isPinned ? '#facc15' : 'currentColor'
+            fill: credential.isPinned ? '#facc15' : 'none',
+            color: credential.isPinned ? '#facc15' : 'currentColor'
           }} />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleCopyUrl}
-          title={copied ? 'Copied!' : 'Copy URL'}
+          onClick={() => onView(credential.id)}
+          title="View credential"
         >
-          {copied ? (
-            <Check style={{ width: '1rem', height: '1rem', color: '#22c55e' }} />
-          ) : (
-            <Copy style={{ width: '1rem', height: '1rem' }} />
-          )}
+          <Eye style={{ width: '1rem', height: '1rem' }} />
         </Button>
         {onAddNote && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onAddNote(link.id)}
+            onClick={() => onAddNote(credential.id)}
             title="Add Note"
           >
             <StickyNote style={{ width: '1rem', height: '1rem' }} />
@@ -233,7 +190,7 @@ export function LinkCard({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => onEdit(link)}
+          onClick={() => onEdit(credential.id)}
           title="Edit"
         >
           <Edit style={{ width: '1rem', height: '1rem' }} />
@@ -241,17 +198,9 @@ export function LinkCard({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => window.open(link.url, '_blank')}
-          title="Open link"
-        >
-          <ExternalLink style={{ width: '1rem', height: '1rem' }} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
           onClick={() => {
-            if (confirm('Delete this link?')) {
-              onDelete(link.id);
+            if (confirm('Delete this credential?')) {
+              onDelete(credential.id);
             }
           }}
           title="Delete"

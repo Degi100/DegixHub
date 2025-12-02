@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, X } from 'lucide-react';
-import dialogStyles from './dialog.module.css';
+import dialogStyles from '../dialogs/dialog.module.css';
 
 // Default categories - same as backend
 const DEFAULT_CATEGORIES = [

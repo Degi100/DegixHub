@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { usePinContext } from '../pin-context';
+import { usePinContext } from '../components/pin';
 
 type PinModalMode = 'setup' | 'verify';
 

@@ -4,16 +4,14 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Trash2, Plus, Star, Edit } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
-import { PinModal } from './pin-modal';
+import { PinModal } from '../components/pin';
 import { copySecureToClipboard } from '@/lib/clipboard';
-import { DraggableGrid } from './draggable-grid';
-import { DraggableTable } from './draggable-table';
-import { LinkCard, Link, LinkedNote } from './link-card';
-import { ViewToggle } from './view-toggle';
-import { CategoryFilter, ActiveFilters } from './category-filter';
-import { useViewMode, useCategoryFilter, usePinProtection } from './hooks';
-import { LinkFormDialog } from './link-form-dialog';
-import dialogStyles from './dialog.module.css';
+import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters } from '../components/ui';
+import { LinkCard } from '../components/cards';
+import type { Link, LinkedNote } from '../components/cards';
+import { LinkFormDialog } from '../components/dialogs';
+import { useViewMode, useCategoryFilter, usePinProtection } from '../hooks';
+import dialogStyles from '../components/dialogs/dialog.module.css';
 
 interface CredentialOption {
   id: string;

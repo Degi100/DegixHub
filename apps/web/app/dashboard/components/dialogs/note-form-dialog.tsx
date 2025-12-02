@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { CategorySelect } from './category-select';
+import { CategorySelect } from '../ui/category-select';
 import dialogStyles from './dialog.module.css';
 
 interface NoteFormData {

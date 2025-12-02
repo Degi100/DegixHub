@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Settings, Shield, Lock, Unlock } from 'lucide-react';
-import { PinModal } from './pin-modal';
-import { usePinContext } from './pin-context';
-import dialogStyles from './dialog.module.css';
+import { PinModal, usePinContext } from '../components/pin';
+import dialogStyles from '../components/dialogs/dialog.module.css';
 
 export function SettingsSection() {
   const [showPinModal, setShowPinModal] = useState(false);

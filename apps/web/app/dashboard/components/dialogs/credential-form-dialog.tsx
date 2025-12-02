@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { X, RefreshCw, Copy } from 'lucide-react';
 import { toast } from 'sonner';
-import { CategorySelect } from './category-select';
+import { CategorySelect } from '../ui/category-select';
 import { copySecureToClipboard } from '@/lib/clipboard';
 import dialogStyles from './dialog.module.css';
 

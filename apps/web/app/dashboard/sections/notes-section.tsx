@@ -4,14 +4,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star, Plus, Edit, Trash2, StickyNote, Link as LinkIcon, Key } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
-import { DraggableGrid } from './draggable-grid';
-import { DraggableTable } from './draggable-table';
-import { ViewToggle } from './view-toggle';
-import { CategoryFilter, ActiveFilters } from './category-filter';
-import { NoteCard, Note, LinkedLink, LinkedCredential } from './note-card';
-import { useViewMode } from './hooks';
-import { NoteFormDialog } from './note-form-dialog';
-import dialogStyles from './dialog.module.css';
+import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters } from '../components/ui';
+import { NoteCard } from '../components/cards';
+import type { Note, LinkedLink, LinkedCredential } from '../components/cards';
+import { NoteFormDialog } from '../components/dialogs';
+import { useViewMode } from '../hooks';
+import dialogStyles from '../components/dialogs/dialog.module.css';
 
 interface Props {
   notes: Note[];

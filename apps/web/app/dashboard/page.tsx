@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/react';
 import { Sidebar } from '@/components/sidebar';
-import { CommandPalette } from './command-palette';
-import { LinksSection } from './links-section';
-import { CredentialsSection } from './credentials-section';
-import { NotesSection } from './notes-section';
-import { ActivityLog } from './activity-log';
-import { DataManagement } from './data-management';
-import { SettingsSection } from './settings-section';
-import { PinProvider } from './pin-context';
+import { PinProvider } from './components/pin';
+import {
+  CommandPalette,
+  LinksSection,
+  CredentialsSection,
+  NotesSection,
+  ActivityLog,
+  DataManagement,
+  SettingsSection,
+} from './sections';
 import { toast } from 'sonner';
 import styles from './page.module.css';
 
