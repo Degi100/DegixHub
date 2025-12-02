@@ -1,9 +1,0 @@
--- Drop all tables
-DROP TABLE IF EXISTS activity_logs;
-DROP TABLE IF EXISTS credential_tags;
-DROP TABLE IF EXISTS link_tags;
-DROP TABLE IF EXISTS credentials;
-DROP TABLE IF EXISTS links;
-DROP TABLE IF EXISTS tags;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS users;
