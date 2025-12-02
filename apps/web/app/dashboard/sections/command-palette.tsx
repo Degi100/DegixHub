@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { trpc } from '@/lib/trpc/react';
 import { copySecureToClipboard } from '@/lib/clipboard';
+import { ViewNoteModal } from '../components/dialogs';
 import styles from './command-palette.module.css';
 
 interface Tag {
@@ -32,6 +33,8 @@ interface Note {
   title: string;
   content: string;
   category: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 type SearchResult =
@@ -45,7 +48,6 @@ interface CommandPaletteProps {
   links: Link[];
   credentials: Credential[];
   notes?: Note[];
-  onNavigateToNote?: (noteId: string) => void;
 }
 
 export function CommandPalette({
@@ -54,12 +56,12 @@ export function CommandPalette({
   links,
   credentials,
   notes = [],
-  onNavigateToNote,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [viewingNote, setViewingNote] = useState<Note | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch credential data when viewing
@@ -174,9 +176,8 @@ export function CommandPalette({
       // Copy credential to clipboard
       setViewingCredentialId(result.item.id);
     } else if (result.type === 'note') {
-      // Navigate to notes section
-      onNavigateToNote?.(result.item.id);
-      onClose();
+      // Show note in modal
+      setViewingNote(result.item);
     } else {
       // Open link in new tab
       window.open(result.item.url, '_blank', 'noopener,noreferrer');
@@ -299,6 +300,22 @@ export function CommandPalette({
           </div>
         </div>
       </div>
+
+      {/* View Note Modal */}
+      <ViewNoteModal
+        note={viewingNote ? {
+          id: viewingNote.id,
+          title: viewingNote.title,
+          content: viewingNote.content,
+          category: viewingNote.category,
+          createdAt: viewingNote.createdAt || new Date().toISOString(),
+          updatedAt: viewingNote.updatedAt || new Date().toISOString(),
+        } : null}
+        onClose={() => {
+          setViewingNote(null);
+          onClose();
+        }}
+      />
     </div>
   );
 }

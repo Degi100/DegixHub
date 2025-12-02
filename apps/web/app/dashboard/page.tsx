@@ -13,6 +13,7 @@ import {
   ActivityLog,
   DataManagement,
   SettingsSection,
+  PinnedSection,
 } from './sections';
 import { toast } from 'sonner';
 import styles from './page.module.css';
@@ -255,6 +256,18 @@ export default function DashboardPage() {
 
           <div className={styles.content}>
             {/* Content Sections */}
+            {activeSection === 'pinned' && (
+              <PinnedSection
+                links={links}
+                credentials={credentials}
+                notes={notes}
+                colorMap={categoriesData?.colorMap || {}}
+                onUnpinLink={(id) => toggleLinkPinMutation.mutate({ id })}
+                onUnpinCredential={(id) => toggleCredentialPinMutation.mutate({ id })}
+                onUnpinNote={(id) => toggleNotePinMutation.mutate({ id })}
+              />
+            )}
+
             {activeSection === 'links' && (
               <LinksSection
                 links={links?.filter((link) => {
@@ -377,10 +390,7 @@ export default function DashboardPage() {
           onClose={() => setShowCommandPalette(false)}
           links={links || []}
           credentials={credentials || []}
-          notes={notes?.map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category })) || []}
-          onNavigateToNote={() => {
-            setActiveSection('notes');
-          }}
+          notes={notes?.map(n => ({ id: n.id, title: n.title, content: n.content, category: n.category, createdAt: n.createdAt, updatedAt: n.updatedAt })) || []}
         />
       </div>
     </PinProvider>

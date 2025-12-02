@@ -16,7 +16,7 @@ import { useTheme } from 'next-themes';
 import styles from './sidebar.module.css';
 
 interface SidebarProps {
-  onNavigate: (section: 'links' | 'credentials' | 'notes' | 'activity' | 'data-management' | 'settings') => void;
+  onNavigate: (section: 'pinned' | 'links' | 'credentials' | 'notes' | 'activity' | 'data-management' | 'settings') => void;
   activeSection: string;
   onLogout: () => void;
   stats: {
@@ -60,9 +60,12 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, on
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>DegixHub</h1>
-            <p className={styles.subtitle}>
+            <button
+              onClick={() => handleNavigate('pinned')}
+              className={styles.pinnedLink}
+            >
               {stats.pinnedCount} pinned items
-            </p>
+            </button>
           </div>
           {/* Close button for mobile */}
           <button className={styles.closeButton} onClick={onClose}>

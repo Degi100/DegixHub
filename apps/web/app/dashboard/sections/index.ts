@@ -5,3 +5,4 @@ export { SettingsSection } from './settings-section';
 export { ActivityLog } from './activity-log';
 export { DataManagement } from './data-management';
 export { CommandPalette } from './command-palette';
+export { PinnedSection } from './pinned-section';
