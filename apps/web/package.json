@@ -16,17 +16,17 @@
     "@trpc/server": "^11.0.0-rc.592",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.554.0",
-    "next": "^15.0.3",
+    "next": "^15.5.7",
     "next-themes": "^0.4.6",
-    "react": "^19.0.0-rc.1",
-    "react-dom": "^19.0.0-rc.1",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "sonner": "^2.0.7",
     "valibot": "^0.42.1"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "typescript": "^5.6.3"
   }
 }
