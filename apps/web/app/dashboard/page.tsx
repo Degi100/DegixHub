@@ -379,7 +379,7 @@ export default function DashboardPage() {
             )}
 
             {activeSection === 'settings' && (
-              <SettingsSection />
+              <SettingsSection onCategoriesChange={refetchCategories} />
             )}
           </div>
         </main>

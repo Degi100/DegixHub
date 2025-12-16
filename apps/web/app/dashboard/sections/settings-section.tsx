@@ -14,7 +14,11 @@ const DEFAULT_CATEGORY_NAMES = [
   'Social', 'Entertainment', 'Shopping', 'News', 'Ideas', 'Projects', 'Todo'
 ];
 
-export function SettingsSection() {
+interface SettingsSectionProps {
+  onCategoriesChange?: () => void;
+}
+
+export function SettingsSection({ onCategoriesChange }: SettingsSectionProps) {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinModalMode, setPinModalMode] = useState<'setup' | 'change' | 'recovery'>('setup');
   const { hasPin, unlock, refetchHasPin } = usePinContext();
@@ -33,6 +37,7 @@ export function SettingsSection() {
       setNewCategoryName('');
       setNewCategoryColor('#6b7280');
       toast.success('Kategorie erstellt');
+      onCategoriesChange?.();
     },
   });
   const updateCategoryMutation = trpc.categories.update.useMutation({
@@ -40,18 +45,21 @@ export function SettingsSection() {
       utils.categories.getAll.invalidate();
       setEditingCategory(null);
       toast.success('Kategorie aktualisiert');
+      onCategoriesChange?.();
     },
   });
   const deleteCategoryMutation = trpc.categories.delete.useMutation({
     onSuccess: () => {
       utils.categories.getAll.invalidate();
       toast.success('Kategorie gelöscht');
+      onCategoriesChange?.();
     },
   });
   const updateDefaultColorMutation = trpc.categories.updateDefaultColor.useMutation({
     onSuccess: () => {
       utils.categories.getAll.invalidate();
       toast.success('Farbe aktualisiert');
+      onCategoriesChange?.();
     },
   });
 
