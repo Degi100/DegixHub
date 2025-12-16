@@ -2,13 +2,20 @@
 
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface Column<T> {
   key: string;
   header: string;
   width?: string;
   align?: 'left' | 'right' | 'center';
+  sortable?: boolean;
   render: (item: T) => ReactNode;
+}
+
+export interface SortConfig {
+  key: string;
+  direction: 'asc' | 'desc';
 }
 
 interface DraggableTableProps<T extends { id: string; isPinned?: boolean | null }> {
@@ -19,6 +26,8 @@ interface DraggableTableProps<T extends { id: string; isPinned?: boolean | null 
   hasMoreToLoad?: boolean;
   remainingCount?: number;
   onLoadMore?: () => void;
+  sortConfig?: SortConfig | null;
+  onSort?: (key: string) => void;
 }
 
 export function DraggableTable<T extends { id: string; isPinned?: boolean | null }>({
@@ -29,6 +38,8 @@ export function DraggableTable<T extends { id: string; isPinned?: boolean | null
   hasMoreToLoad = false,
   remainingCount = 0,
   onLoadMore,
+  sortConfig,
+  onSort,
 }: DraggableTableProps<T>) {
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.effectAllowed = 'move';
@@ -101,15 +112,25 @@ export function DraggableTable<T extends { id: string; isPinned?: boolean | null
             {columns.map(col => (
               <th
                 key={col.key}
+                onClick={() => col.sortable && onSort?.(col.key)}
                 style={{
                   padding: 'var(--space-3)',
                   textAlign: col.align || 'left',
                   fontWeight: 600,
-                  color: 'var(--color-muted-foreground)',
+                  color: sortConfig?.key === col.key ? 'var(--color-primary)' : 'var(--color-muted-foreground)',
                   width: col.width,
+                  cursor: col.sortable ? 'pointer' : 'default',
+                  userSelect: 'none',
                 }}
               >
-                {col.header}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {col.header}
+                  {col.sortable && sortConfig?.key === col.key && (
+                    sortConfig.direction === 'asc'
+                      ? <ChevronUp style={{ width: '14px', height: '14px' }} />
+                      : <ChevronDown style={{ width: '14px', height: '14px' }} />
+                  )}
+                </span>
               </th>
             ))}
             <th style={{ padding: 'var(--space-3)', textAlign: 'right', fontWeight: 600, color: 'var(--color-muted-foreground)' }}>

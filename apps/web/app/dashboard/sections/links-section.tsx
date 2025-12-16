@@ -6,7 +6,7 @@ import { ExternalLink, Trash2, Plus, Star, Edit } from 'lucide-react';
 import { trpc } from '@/lib/trpc/react';
 import { PinModal } from '../components/pin';
 import { copySecureToClipboard } from '@/lib/clipboard';
-import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters } from '../components/ui';
+import { DraggableGrid, DraggableTable, ViewToggle, CategoryFilter, ActiveFilters, type SortConfig } from '../components/ui';
 import { LinkCard } from '../components/cards';
 import type { Link, LinkedNote } from '../components/cards';
 import { LinkFormDialog } from '../components/dialogs';
@@ -56,6 +56,20 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
     handlePinSuccess,
     handlePinClose,
   } = usePinProtection({ onExecute: (credentialId: string) => setCopyingCredentialId(credentialId) });
+
+  // Sort state
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        return prev.direction === 'asc'
+          ? { key, direction: 'desc' }
+          : null; // Third click clears sort
+      }
+      return { key, direction: 'asc' };
+    });
+  };
 
   // Filter & View state (using hooks)
   const [viewMode, setViewMode] = useViewMode('links');
@@ -149,7 +163,41 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
   };
 
   // Sort all links by pinOrder (pinned first, then by pinOrder, then by createdAt)
+  // Or by sortConfig if set
   const sortedLinks = filteredLinks?.slice().sort((a, b) => {
+    // If sorting by column, apply that first
+    if (sortConfig) {
+      const { key, direction } = sortConfig;
+      const modifier = direction === 'asc' ? 1 : -1;
+
+      let aVal: string | number = '';
+      let bVal: string | number = '';
+
+      switch (key) {
+        case 'name':
+          aVal = a.name.toLowerCase();
+          bVal = b.name.toLowerCase();
+          break;
+        case 'url':
+          aVal = a.url.toLowerCase();
+          bVal = b.url.toLowerCase();
+          break;
+        case 'category':
+          aVal = a.category.toLowerCase();
+          bVal = b.category.toLowerCase();
+          break;
+        case 'description':
+          aVal = (a.description || '').toLowerCase();
+          bVal = (b.description || '').toLowerCase();
+          break;
+      }
+
+      if (aVal < bVal) return -1 * modifier;
+      if (aVal > bVal) return 1 * modifier;
+      return 0;
+    }
+
+    // Default sort: pinned first, then by pinOrder, then by createdAt
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
     const orderA = a.pinOrder ?? 999999;
@@ -269,6 +317,7 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
             {
               key: 'name',
               header: 'Link',
+              sortable: true,
               render: (link) => (
                 <a
                   href={link.url}
@@ -285,6 +334,7 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
             {
               key: 'url',
               header: 'URL',
+              sortable: true,
               render: (link) => (
                 <span style={{
                   color: 'var(--color-muted-foreground)',
@@ -312,6 +362,7 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
             {
               key: 'category',
               header: 'Kategorie',
+              sortable: true,
               render: (link) => (
                 <span style={{
                   padding: '2px 8px',
@@ -326,6 +377,8 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
             },
           ]}
           onReorder={handleReorderPinned}
+          sortConfig={sortConfig}
+          onSort={handleSort}
           renderActions={(link) => (
             <>
               <Button variant="ghost" size="icon" onClick={() => onTogglePin(link.id)} title={link.isPinned ? 'Unpin' : 'Pin'}>
