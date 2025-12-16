@@ -283,6 +283,24 @@ export function LinksSection({ links, onDeleteLink, onTogglePin, onCreateLink, o
               ),
             },
             {
+              key: 'url',
+              header: 'URL',
+              render: (link) => (
+                <span style={{
+                  color: 'var(--color-muted-foreground)',
+                  fontSize: 'var(--text-xs)',
+                  fontFamily: 'monospace',
+                  maxWidth: '200px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  display: 'block'
+                }}>
+                  {link.url.replace(/^https?:\/\//, '')}
+                </span>
+              ),
+            },
+            {
               key: 'description',
               header: 'Beschreibung',
               render: (link) => (
