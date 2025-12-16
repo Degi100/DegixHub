@@ -102,6 +102,75 @@ export const categoriesRouter = router({
       return newCategory;
     }),
 
+  // Update a category (color)
+  update: protectedProcedure
+    .input((input) =>
+      parse(
+        object({
+          id: string(),
+          name: optional(string()),
+          color: optional(string()),
+        }),
+        input
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      const updates: Partial<{ name: string; color: string }> = {};
+      if (input.name) updates.name = input.name;
+      if (input.color) updates.color = input.color;
+
+      await db
+        .update(categories)
+        .set(updates)
+        .where(and(eq(categories.id, input.id), eq(categories.userId, userId)));
+
+      return { success: true };
+    }),
+
+  // Update default category color (creates override entry)
+  updateDefaultColor: protectedProcedure
+    .input((input) =>
+      parse(
+        object({
+          name: string(),
+          color: string(),
+        }),
+        input
+      )
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id;
+
+      // Check if override already exists
+      const existing = await db
+        .select()
+        .from(categories)
+        .where(and(eq(categories.userId, userId), eq(categories.name, input.name)));
+
+      if (existing.length > 0) {
+        // Update existing override
+        await db
+          .update(categories)
+          .set({ color: input.color })
+          .where(eq(categories.id, existing[0].id));
+      } else {
+        // Create new override entry
+        const id = generateId(15);
+        await db.insert(categories).values({
+          id,
+          userId,
+          name: input.name,
+          color: input.color,
+          type: 'all',
+          createdAt: new Date(),
+        });
+      }
+
+      return { success: true };
+    }),
+
   // Delete a category
   delete: protectedProcedure
     .input((input) =>
