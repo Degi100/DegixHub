@@ -130,6 +130,59 @@ export const categories = sqliteTable('categories', {
     .notNull(),
 });
 
+// Projects for DevOps info tracking
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  // Database info
+  dbType: text('db_type').notNull().default('none'), // 'sqlite', 'postgresql', 'mysql', 'mariadb', 'mongodb', 'redis', 'turso', 'supabase', 'none', 'other'
+  dbTypeOther: text('db_type_other'), // Custom DB type when dbType is 'other'
+  dbPath: text('db_path'), // Host path for file-based DBs (e.g., /mnt/storage/.../production.db)
+  // Encrypted DB connection string (for connection strings with passwords)
+  encryptedDbConnection: text('encrypted_db_connection'),
+  dbConnectionIv: text('db_connection_iv'),
+  dbConnectionAuthTag: text('db_connection_auth_tag'),
+  // Infrastructure
+  containers: text('containers'), // JSON array: ["api", "web"]
+  volumes: text('volumes'), // JSON array: [{"host": "/mnt/...", "container": "/data"}]
+  domains: text('domains'), // JSON array: ["hub.example.com", "api.example.com"]
+  // Project info
+  gitRepo: text('git_repo'),
+  techStack: text('tech_stack'), // e.g., "Bun, Hono, Next.js, SQLite"
+  pendingMigrations: text('pending_migrations'), // SQL or commands to run
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+// Junction table for project-link associations (multiple links per project)
+export const projectLinks = sqliteTable('project_links', {
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  linkId: text('link_id')
+    .notNull()
+    .references(() => links.id, { onDelete: 'cascade' }),
+});
+
+// Junction table for project-credential associations (multiple credentials per project)
+export const projectCredentials = sqliteTable('project_credentials', {
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  credentialId: text('credential_id')
+    .notNull()
+    .references(() => credentials.id, { onDelete: 'cascade' }),
+});
+
 export const activityLogs = sqliteTable('activity_logs', {
   id: text('id').primaryKey(),
   userId: text('user_id')

@@ -64,6 +64,13 @@
       "when": 1765919493630,
       "tag": "0008_jazzy_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1765994847635,
+      "tag": "0009_magical_bloodstorm",
+      "breakpoints": true
     }
   ]
 }

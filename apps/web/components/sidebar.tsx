@@ -11,18 +11,20 @@ import {
   X,
   FileText,
   Settings,
+  FolderKanban,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import styles from './sidebar.module.css';
 
 interface SidebarProps {
-  onNavigate: (section: 'pinned' | 'links' | 'credentials' | 'notes' | 'activity' | 'data-management' | 'settings') => void;
+  onNavigate: (section: 'pinned' | 'links' | 'credentials' | 'notes' | 'projects' | 'activity' | 'data-management' | 'settings') => void;
   activeSection: string;
   onLogout: () => void;
   stats: {
     linksCount: number;
     credentialsCount: number;
     notesCount: number;
+    projectsCount: number;
     tagsCount: number;
     pinnedCount: number;
   };
@@ -37,6 +39,7 @@ export function Sidebar({ onNavigate, activeSection, onLogout, stats, isOpen, on
     { id: 'links', label: 'Links', icon: LinkIcon, count: stats.linksCount },
     { id: 'credentials', label: 'Credentials', icon: Key, count: stats.credentialsCount },
     { id: 'notes', label: 'Notes', icon: FileText, count: stats.notesCount },
+    { id: 'projects', label: 'Projects', icon: FolderKanban, count: stats.projectsCount },
     { id: 'activity', label: 'Activity', icon: Activity },
     { id: 'data-management', label: 'Data', icon: Database },
     { id: 'settings', label: 'Settings', icon: Settings },

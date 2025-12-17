@@ -8,6 +8,7 @@ import { dataExportRouter } from './routers/data-export';
 import { notesRouter } from './routers/notes';
 import { categoriesRouter } from './routers/categories';
 import { securityPinRouter } from './routers/security-pin';
+import { projectsRouter } from './routers/projects';
 
 export const appRouter = router({
   health: publicProcedure.query(() => ({
@@ -23,6 +24,7 @@ export const appRouter = router({
   notes: notesRouter,
   categories: categoriesRouter,
   securityPin: securityPinRouter,
+  projects: projectsRouter,
 });
 
 export type AppRouter = typeof appRouter;

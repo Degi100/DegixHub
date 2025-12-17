@@ -10,6 +10,7 @@ import {
   LinksSection,
   CredentialsSection,
   NotesSection,
+  ProjectsSection,
   ActivityLog,
   DataManagement,
   SettingsSection,
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const { data: links, refetch: refetchLinks } = trpc.links.getAll.useQuery();
   const { data: credentials, refetch: refetchCredentials } = trpc.credentials.getAll.useQuery();
   const { data: notes, refetch: refetchNotes } = trpc.notes.getAll.useQuery();
+  const { data: projects, refetch: refetchProjects } = trpc.projects.getAll.useQuery();
   const { data: categoriesData, refetch: refetchCategories } = trpc.categories.getAll.useQuery();
 
   // Link Mutations
@@ -123,6 +125,28 @@ export default function DashboardPage() {
     },
   });
 
+  // Project Mutations
+  const createProjectMutation = trpc.projects.create.useMutation({
+    onSuccess: () => {
+      refetchProjects();
+      toast.success('Project created');
+    },
+  });
+
+  const updateProjectMutation = trpc.projects.update.useMutation({
+    onSuccess: () => {
+      refetchProjects();
+      toast.success('Project updated');
+    },
+  });
+
+  const deleteProjectMutation = trpc.projects.delete.useMutation({
+    onSuccess: () => {
+      refetchProjects();
+      toast.success('Project deleted');
+    },
+  });
+
   // Category Mutation
   const createCategoryMutation = trpc.categories.create.useMutation({
     onSuccess: () => {
@@ -176,6 +200,7 @@ export default function DashboardPage() {
     linksCount: links?.length || 0,
     credentialsCount: credentials?.length || 0,
     notesCount: notes?.length || 0,
+    projectsCount: projects?.length || 0,
     tagsCount: 0,
     pinnedCount:
       (links?.filter((l) => l.isPinned).length || 0) +
@@ -352,6 +377,17 @@ export default function DashboardPage() {
                   setPendingNoteLink(null);
                   setPendingNoteCredential(null);
                 }}
+              />
+            )}
+
+            {activeSection === 'projects' && (
+              <ProjectsSection
+                projects={projects}
+                links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
+                credentials={credentials?.map(c => ({ id: c.id, name: c.name }))}
+                onDeleteProject={(id) => deleteProjectMutation.mutate({ id })}
+                onCreateProject={(data) => createProjectMutation.mutate(data)}
+                onUpdateProject={(data) => updateProjectMutation.mutate(data)}
               />
             )}
 
