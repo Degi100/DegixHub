@@ -52,6 +52,7 @@ export const credentials = sqliteTable('credentials', {
   authTag: text('auth_tag').notNull(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).default(false),
   pinOrder: integer('pin_order').default(0), // Order for drag & drop sorting of pinned items
+  linkedLinkId: text('linked_link_id'), // Can't use .references() here due to circular dependency
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .$defaultFn(() => new Date())
     .notNull(),

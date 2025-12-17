@@ -35,6 +35,7 @@ export const credentialsRouter = router({
             category: cred.category,
             isPinned: cred.isPinned,
             pinOrder: cred.pinOrder,
+            linkedLinkId: cred.linkedLinkId,
             createdAt: cred.createdAt,
             tags: [],
           };
@@ -49,6 +50,7 @@ export const credentialsRouter = router({
           category: cred.category,
           isPinned: cred.isPinned,
           pinOrder: cred.pinOrder,
+          linkedLinkId: cred.linkedLinkId,
           createdAt: cred.createdAt,
           tags: credTagsData,
         };
@@ -91,6 +93,7 @@ export const credentialsRouter = router({
         name: credential.name,
         category: credential.category,
         data: decryptedData,
+        linkedLinkId: credential.linkedLinkId,
         createdAt: credential.createdAt,
       };
     }),
@@ -112,6 +115,7 @@ export const credentialsRouter = router({
         encryptedData: encrypted.encryptedData,
         iv: encrypted.iv,
         authTag: encrypted.authTag,
+        linkedLinkId: input.linkedLinkId || null,
       });
 
       // Assign tags if provided
@@ -171,6 +175,7 @@ export const credentialsRouter = router({
           encryptedData: encrypted.encryptedData,
           iv: encrypted.iv,
           authTag: encrypted.authTag,
+          linkedLinkId: input.linkedLinkId !== undefined ? (input.linkedLinkId || null) : undefined,
         })
         .where(eq(credentials.id, input.id));
 

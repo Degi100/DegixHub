@@ -13,18 +13,25 @@ import { CredentialFormDialog, ViewCredentialModal } from '../components/dialogs
 import { useViewMode, useCategoryFilter, usePinProtection } from '../hooks';
 import dialogStyles from '../components/dialogs/dialog.module.css';
 
+interface LinkOption {
+  id: string;
+  name: string;
+  url: string;
+}
+
 interface CredentialsSectionProps {
   credentials: Credential[] | undefined;
   onDeleteCredential: (id: string) => void;
   onTogglePin: (id: string) => void;
-  onCreateCredential: (data: { name: string; data: string; category: string }) => void;
-  onUpdateCredential: (data: { id: string; name: string; data: string; category: string }) => void;
+  onCreateCredential: (data: { name: string; data: string; category: string; linkedLinkId?: string | null }) => void;
+  onUpdateCredential: (data: { id: string; name: string; data: string; category: string; linkedLinkId?: string | null }) => void;
   categories: string[];
   colorMap?: Record<string, string>;
   onAddCategory: (name: string, color?: string) => void;
   onAddNote?: (credentialId: string) => void;
   notesCountByCredentialId?: Record<string, number>;
   notesByCredentialId?: Record<string, LinkedNote[]>;
+  links?: LinkOption[];
 }
 
 export function CredentialsSection({
@@ -39,6 +46,7 @@ export function CredentialsSection({
   onAddNote,
   notesCountByCredentialId = {},
   notesByCredentialId = {},
+  links = [],
 }: CredentialsSectionProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -47,6 +55,7 @@ export function CredentialsSection({
     name: '',
     data: '',
     category: 'General',
+    linkedLinkId: null as string | null,
   });
 
   // PIN protection using hook
@@ -167,12 +176,8 @@ export function CredentialsSection({
     } else {
       onCreateCredential(formData);
     }
-    setFormData({ name: '', data: '', category: 'General' });
+    setFormData({ name: '', data: '', category: 'General', linkedLinkId: null });
     setShowDialog(false);
-  };
-
-  const handleEdit = (id: string) => {
-    setEditingId(id);
   };
 
   // Populate form when editing credential is loaded
@@ -181,6 +186,7 @@ export function CredentialsSection({
       name: editingCredential.name,
       data: editingCredential.data,
       category: editingCredential.category,
+      linkedLinkId: editingCredential.linkedLinkId || null,
     });
     setShowDialog(true);
   }
@@ -188,7 +194,7 @@ export function CredentialsSection({
   const handleCancel = () => {
     setShowDialog(false);
     setEditingId(null);
-    setFormData({ name: '', data: '', category: 'General' });
+    setFormData({ name: '', data: '', category: 'General', linkedLinkId: null });
   };
 
   return (
@@ -227,6 +233,7 @@ export function CredentialsSection({
         onCancel={handleCancel}
         categories={categories}
         onAddCategory={onAddCategory}
+        links={links}
       />
 
       {/* Table View */}

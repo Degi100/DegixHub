@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { X, RefreshCw, Copy } from 'lucide-react';
+import { X, RefreshCw, Copy, Link } from 'lucide-react';
 import { toast } from 'sonner';
 import { CategorySelect } from '../ui/category-select';
 import { copySecureToClipboard } from '@/lib/clipboard';
@@ -11,6 +11,13 @@ interface CredentialFormData {
   name: string;
   data: string;
   category: string;
+  linkedLinkId: string | null;
+}
+
+interface LinkOption {
+  id: string;
+  name: string;
+  url: string;
 }
 
 interface CredentialFormDialogProps {
@@ -22,6 +29,7 @@ interface CredentialFormDialogProps {
   onCancel: () => void;
   categories: string[];
   onAddCategory: (name: string, color?: string) => void;
+  links?: LinkOption[];
 }
 
 // Password generator
@@ -57,6 +65,7 @@ export function CredentialFormDialog({
   onCancel,
   categories,
   onAddCategory,
+  links = [],
 }: CredentialFormDialogProps) {
   if (!isOpen) return null;
 
@@ -137,6 +146,30 @@ export function CredentialFormDialog({
               onAddCategory={onAddCategory}
             />
           </div>
+          {links.length > 0 && (
+            <div className={dialogStyles.formField}>
+              <label className={dialogStyles.label}>
+                <Link style={{ width: '0.875rem', height: '0.875rem', display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                Link verknüpfen
+              </label>
+              <select
+                value={formData.linkedLinkId || ''}
+                onChange={(e) => onFormDataChange({ ...formData, linkedLinkId: e.target.value || null })}
+                className={dialogStyles.input}
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="">Kein Link</option>
+                {links.map((link) => (
+                  <option key={link.id} value={link.id}>
+                    {link.name} ({new URL(link.url).hostname})
+                  </option>
+                ))}
+              </select>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted-foreground)', marginTop: '4px' }}>
+                Verknüpfe dieses Credential mit einem Link
+              </p>
+            </div>
+          )}
           <div className={dialogStyles.formActions}>
             <Button type="submit" style={{ flex: 1 }}>{isEditing ? 'Update' : 'Add'} Credential</Button>
             <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>

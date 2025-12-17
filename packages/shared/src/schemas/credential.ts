@@ -1,10 +1,11 @@
-import { array, minLength, object, optional, pipe, string } from 'valibot';
+import { array, minLength, nullable, object, optional, pipe, string } from 'valibot';
 
 export const CredentialCreateSchema = object({
   name: pipe(string(), minLength(1, 'Name is required')),
   category: pipe(string(), minLength(1, 'Category is required')),
   data: pipe(string(), minLength(1, 'Credential data is required')),
   tagIds: optional(array(string())),
+  linkedLinkId: optional(nullable(string())),
 });
 
 export const CredentialUpdateSchema = object({
@@ -13,6 +14,7 @@ export const CredentialUpdateSchema = object({
   category: pipe(string(), minLength(1, 'Category is required')),
   data: pipe(string(), minLength(1, 'Credential data is required')),
   tagIds: optional(array(string())),
+  linkedLinkId: optional(nullable(string())),
 });
 
 export const CredentialDeleteSchema = object({

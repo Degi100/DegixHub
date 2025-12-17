@@ -317,6 +317,7 @@ export default function DashboardPage() {
                 onAddNote={handleAddNoteFromCredential}
                 notesCountByCredentialId={notesCountByCredentialId}
                 notesByCredentialId={notesByCredentialId}
+                links={links?.map(l => ({ id: l.id, name: l.name, url: l.url }))}
               />
             )}
 
