@@ -1,12 +1,18 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { X, Copy, Shield } from 'lucide-react';
+import { X, Copy, Shield, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { copySecureToClipboard } from '@/lib/clipboard';
 import { trpc } from '@/lib/trpc/react';
 import styles from '../cards/card.module.css';
 import dialogStyles from './dialog.module.css';
+
+interface LinkedLink {
+  id: string;
+  name: string;
+  url: string;
+}
 
 interface ViewCredentialModalProps {
   credential: {
@@ -14,11 +20,13 @@ interface ViewCredentialModalProps {
     name: string;
     category: string;
     data: string;
+    linkedLinkId?: string | null;
   } | null;
   onClose: () => void;
+  linkedLink?: LinkedLink | null;
 }
 
-export function ViewCredentialModal({ credential, onClose }: ViewCredentialModalProps) {
+export function ViewCredentialModal({ credential, onClose, linkedLink }: ViewCredentialModalProps) {
   const logCopiedMutation = trpc.credentials.logCopied.useMutation();
 
   if (!credential) return null;
@@ -59,6 +67,24 @@ export function ViewCredentialModal({ credential, onClose }: ViewCredentialModal
               {credential.data}
             </pre>
           </div>
+
+          {linkedLink && (
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted-foreground)', marginBottom: 'var(--space-2)', display: 'block' }}>
+                Verknüpfter Link
+              </label>
+              <a
+                href={linkedLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.linkedLinkBadge}
+                style={{ display: 'inline-flex', marginTop: 0 }}
+              >
+                <ExternalLink style={{ width: '0.875rem', height: '0.875rem' }} />
+                {linkedLink.name}
+              </a>
+            </div>
+          )}
 
           <div className={styles.securityBadge}>
             <Shield />

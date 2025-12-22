@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, Eye, Trash2, Plus, Edit, Shield } from 'lucide-react';
+import { Star, Eye, Trash2, Plus, Edit, Shield, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc/react';
 import { PinModal } from '../components/pin';
@@ -140,6 +140,9 @@ export function CredentialsSection({
     pinProtectedAction({ type, id });
   };
 
+  // Create a map of link ID to link for quick lookup
+  const linksMap = new Map(links.map((link) => [link.id, link]));
+
   // Sort all credentials by pinOrder (pinned first, then by pinOrder, then by createdAt)
   const sortedCredentials = filteredCredentials?.slice().sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
@@ -266,6 +269,38 @@ export function CredentialsSection({
                 </span>
               ),
             },
+            {
+              key: 'linkedLink',
+              header: 'Link',
+              render: (cred) => {
+                const link = cred.linkedLinkId ? linksMap.get(cred.linkedLinkId) : null;
+                if (!link) return <span style={{ color: 'var(--color-muted-foreground)', fontSize: 'var(--text-xs)' }}>—</span>;
+                return (
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: 'var(--text-xs)',
+                      fontWeight: 500,
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      color: '#3b82f6',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      textDecoration: 'none',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink style={{ width: '12px', height: '12px' }} />
+                    {link.name}
+                  </a>
+                );
+              },
+            },
           ]}
           onReorder={handleReorderPinned}
           renderActions={(cred) => (
@@ -311,6 +346,7 @@ export function CredentialsSection({
                 categoryColor={colorMap[cred.category]}
                 notesCount={notesCountByCredentialId[cred.id] || 0}
                 linkedNotes={notesByCredentialId[cred.id] || []}
+                linkedLink={cred.linkedLinkId ? linksMap.get(cred.linkedLinkId) : null}
               />
             )}
           />
@@ -346,6 +382,7 @@ export function CredentialsSection({
       <ViewCredentialModal
         credential={viewingId && viewedCredential ? viewedCredential : null}
         onClose={() => setViewingId(null)}
+        linkedLink={viewedCredential?.linkedLinkId ? linksMap.get(viewedCredential.linkedLinkId) : null}
       />
 
       {/* PIN Modal */}

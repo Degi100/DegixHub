@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, Eye, Trash2, X, Edit, StickyNote, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { Star, Eye, Trash2, X, Edit, StickyNote, ChevronDown, ChevronUp, Shield, ExternalLink } from 'lucide-react';
 import styles from './card.module.css';
 import dialogStyles from '../dialogs/dialog.module.css';
 
@@ -12,7 +12,14 @@ export interface Credential {
   category: string;
   isPinned?: boolean | null;
   pinOrder?: number | null;
+  linkedLinkId?: string | null;
   createdAt: string;
+}
+
+export interface LinkedLink {
+  id: string;
+  name: string;
+  url: string;
 }
 
 export interface LinkedNote {
@@ -31,6 +38,7 @@ interface CredentialCardProps {
   categoryColor?: string;
   notesCount?: number;
   linkedNotes?: LinkedNote[];
+  linkedLink?: LinkedLink | null;
 }
 
 export function CredentialCard({
@@ -43,6 +51,7 @@ export function CredentialCard({
   categoryColor,
   notesCount = 0,
   linkedNotes = [],
+  linkedLink,
 }: CredentialCardProps) {
   const [showNotes, setShowNotes] = useState(false);
   const [previewNote, setPreviewNote] = useState<LinkedNote | null>(null);
@@ -149,6 +158,19 @@ export function CredentialCard({
       <div className={`${styles.cardContent} ${styles.credentialContent}`}>
         <h4 className={styles.cardTitle}>{credential.name}</h4>
         <p className={styles.passwordDots}>••••••••</p>
+        {linkedLink && (
+          <a
+            href={linkedLink.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.linkedLinkBadge}
+            title={`Öffne ${linkedLink.name}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink style={{ width: '0.75rem', height: '0.75rem' }} />
+            {linkedLink.name}
+          </a>
+        )}
       </div>
 
       {/* Actions & Date */}
